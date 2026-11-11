@@ -50,7 +50,7 @@ class ObjectType:
     symbol: str           # the character used for it in the ASCII map
     color: tuple          # (r, g, b), each 0..1  -> what vision reports
     texture: str          # one of TEXTURES below -> what touch reports
-    sound_channel: int    # which "pitch" it emits -> what hearing reports
+    sound_channel: int    # which "pitch" it emits -> what hearing reports (None = silent)
     loudness: float       # how loud it is right next to it
     solid: bool           # True: you bump into it. False: you can walk on it.
 
@@ -109,12 +109,17 @@ ACTION_MOVES = np.array([[0, 0], [-1, 0], [0, 1], [1, 0], [0, -1]])
 # ---------------------------------------------------------------------------
 
 class GridWorld:
-    def __init__(self, ascii_map=DEFAULT_MAP, senses=None, seed=0):
+    def __init__(self, ascii_map=DEFAULT_MAP, senses=None, seed=0, object_types=None, textures=None):
+        # Which kinds of objects and textures exist in this world. v0.1 uses
+        # the lists above; v0.2 (many_worlds.py) passes a longer list.
+        self.object_types = object_types if object_types is not None else OBJECT_TYPES
+        self.textures = textures if textures is not None else TEXTURES
+
         # ---- 1. turn the ASCII drawing into a 2D array of cell codes -------
         rows = [line for line in ascii_map.strip().splitlines()]
         self.height, self.width = len(rows), len(rows[0])
         symbol_to_code = {".": FLOOR, "#": WALL}
-        for i, obj in enumerate(OBJECT_TYPES):
+        for i, obj in enumerate(self.object_types):
             symbol_to_code[obj.symbol] = FIRST_OBJECT + i
 
         self.grid = np.zeros((self.height, self.width), dtype=np.int64)
@@ -126,7 +131,7 @@ class GridWorld:
         # ---- 2. derived facts about each cell ------------------------------
         # solid[y, x] is True where the agent cannot stand.
         self.solid = self.grid == WALL
-        for i, obj in enumerate(OBJECT_TYPES):
+        for i, obj in enumerate(self.object_types):
             if obj.solid:
                 self.solid |= self.grid == FIRST_OBJECT + i
 
@@ -224,11 +229,11 @@ class GridWorld:
     def object_at(self, y, x):
         """The ObjectType in cell (y, x), or None if it is floor / wall."""
         code = self.grid[y, x]
-        return OBJECT_TYPES[code - FIRST_OBJECT] if code >= FIRST_OBJECT else None
+        return self.object_types[code - FIRST_OBJECT] if code >= FIRST_OBJECT else None
 
     def render_ascii(self):
         """The map as text, handy for printing."""
         symbols = {FLOOR: ".", WALL: "#"}
-        for i, obj in enumerate(OBJECT_TYPES):
+        for i, obj in enumerate(self.object_types):
             symbols[FIRST_OBJECT + i] = obj.symbol
         return "\n".join("".join(symbols[c] for c in row) for row in self.grid)

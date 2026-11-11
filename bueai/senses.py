@@ -82,12 +82,12 @@ class Touch:
     SPOTS = [(0, 0), (-1, 0), (0, 1), (1, 0), (0, -1)]    # (dy, dx) per spot
 
     def shape(self, world):
-        from .world import TEXTURES
-        return (len(self.SPOTS) * len(TEXTURES),)
+        return (len(self.SPOTS) * len(world.textures),)
 
     def sense(self, world, y, x):
-        from .world import TEXTURES, WALL
+        from .world import WALL
 
+        TEXTURES = world.textures
         out = np.zeros((len(self.SPOTS), len(TEXTURES)), dtype=np.float32)
         for i, (dy, dx) in enumerate(self.SPOTS):
             wy, wx = y + dy, x + dx
@@ -121,16 +121,15 @@ class Hearing:
         self.falloff = falloff
 
     def shape(self, world):
-        from .world import OBJECT_TYPES
-        n_channels = 1 + max(obj.sound_channel for obj in OBJECT_TYPES)
-        return (n_channels,)
+        channels = [obj.sound_channel for obj in world.object_types if obj.sound_channel is not None]
+        return (1 + max(channels),)
 
     def sense(self, world, y, x):
-        from .world import OBJECT_TYPES
-
         out = np.zeros(self.shape(world), dtype=np.float32)
         for oy, ox, type_index in world.objects:
-            obj = OBJECT_TYPES[type_index]
+            obj = world.object_types[type_index]
+            if obj.sound_channel is None:          # a silent object
+                continue
             distance = np.hypot(oy - y, ox - x)        # straight-line distance
             out[obj.sound_channel] += obj.loudness / (1.0 + (distance / self.falloff) ** 2)
         return out

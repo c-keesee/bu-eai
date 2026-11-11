@@ -1,8 +1,7 @@
-# BU-EAI — Bottom-Up Emergent AI (v0.1)
+# BU-EAI — Bottom-Up Emergent AI
 
-A first working prototype of the BU-EAI thesis: instead of training a model
-top-down on a static dataset, grow a mind from accumulated simulated
-experience.
+A working prototype of the BU-EAI thesis: instead of training a model top-down
+on a static dataset, grow a mind from accumulated simulated experience.
 
 An agent wanders a small 2D world with three senses. Its brain is built from
 separate sensory regions that feed a shared recurrent core, and the core feeds
@@ -12,11 +11,13 @@ goal**. The only thing it ever learns is to predict what it will sense next.
 Afterwards we freeze it and ask: did it work out things nobody told it, such
 as where it is?
 
-**Short answer for v0.1: yes, for position.** With vision switched off, a
-linear read-out of the trained core locates the agent to within 0.40 grid
-cells, against 1.35 for the same network before training and 2.42 for the raw
-senses. The result is the same in all 3 seeds. Several other things I tested
-did *not* show emergence, and those are listed just as plainly below.
+| Version | Question | Short answer |
+|---|---|---|
+| **v0.2** (current) | Dropped into a place it has never seen, does it build a map within one life? | It finds **where it is**: error falls from 4.55 to 1.19 cells in 400 moments, against 3.68 untrained and 4.43 for the raw senses. It does **not** yet remember **what is where**. |
+| v0.1 (tag `v0.1`) | In one fixed world, does a sense of position emerge from prediction alone? | Yes: 0.40 cells in the dark, against 1.35 untrained and 2.42 raw senses. But that map was memorised in the weights. |
+
+All numbers, tables, the things that did not work, and the reasoning behind
+each choice are in **[RESULTS.md](RESULTS.md)**.
 
 ## Run it
 
@@ -24,81 +25,110 @@ did *not* show emergence, and those are listed just as plainly below.
 pip install -r requirements.txt
 ```
 
+The v0.2 experiment (12 brains: 4 conditions x 3 seeds; about 90 minutes on 4
+CPU cores):
+
+```bash
+python run_v02.py
+```
+
+If it gets interrupted, this carries on where it stopped and gives the same
+result as an uninterrupted run:
+
+```bash
+python run_v02.py --resume
+```
+
+A 2-minute smoke test (its numbers mean nothing):
+
+```bash
+python run_v02.py --quick
+```
+
+Reprint the report and redraw the plots from saved runs:
+
+```bash
+python run_v02.py --report-only
+```
+
+The noisy-TV follow-up (needs the brains saved by a finished `run_v02.py`):
+
+```bash
+python tv_check.py
+```
+
+The v0.1 experiment is unchanged and still gives its original numbers (2.5
+minutes):
+
 ```bash
 python run_experiment.py
 ```
 
-That trains 3 seeds side by side (one CPU core each), runs both tests, prints
-the tables below and writes three plots plus `results.json` into `results/`.
-It took 2.5 minutes on a 4-core cloud machine. Results are deterministic: the
-same seeds give the same numbers.
-
-Other ways to run it:
-
-```bash
-python run_experiment.py --quick
-```
-
-```bash
-python run_experiment.py --seeds 0 1 2 3 4 --updates 3000
-```
-
-```bash
-python run_experiment.py --no-feedback --out results_no_feedback
-```
+Unit tests for the building blocks:
 
 ```bash
 python -m pytest tests/ -q
 ```
 
-`--quick` is a 20-second smoke test (1 seed, short life; its numbers mean
-nothing). `--no-feedback` cuts the top-down connections. The last command runs
-the unit tests for the building blocks.
+Everything is deterministic: the same seeds give the same numbers. Outputs go
+to `results/v0.2/` and `results/v0.1/`.
 
 ## The files
 
 | File | What it is | Brain analogy |
 |---|---|---|
-| `bueai/world.py` | The grid world: map, objects, movement, ground truth | The outside world. Not part of the brain. |
+| `bueai/world.py` | v0.1 grid world: map, objects, movement, ground truth | The outside world. Not part of the brain. |
+| `bueai/many_worlds.py` | v0.2: random map generator, one map per agent, the noisy TV | Many different places to grow up in |
 | `bueai/senses.py` | `Vision`, `Touch`, `Hearing` | Sense organs: eye, skin, ear |
-| `bueai/model.py` | `SensoryRegion`, `VisionRegion`, `Brain` | Sensory cortex areas, association area, top-down pathways |
-| `bueai/training.py` | `Life` (the loop of experience) and `train()` | Living, and learning from surprise |
-| `bueai/emergence_test.py` | Linear probes on the frozen core | A neuroscientist recording from the brain |
-| `bueai/darkroom_test.py` | Lights-out prediction test | A blindfold experiment |
-| `bueai/plots.py` | The three figures | |
-| `run_experiment.py` | Runs everything, prints the report | |
-| `tests/test_sanity.py` | Unit tests | |
+| `bueai/model.py` | `SensoryRegion`, `VisionRegion`, `Brain`, curiosity heads | Sensory cortex areas, association area, top-down pathways, self-monitoring |
+| `bueai/training.py` | `Life` (the loop of experience, movement styles, rebirth) and `train()` | Living, and learning from surprise |
+| `bueai/newmap_test.py` | v0.2 tests: probes and dark room in never-seen maps | A neuroscientist recording from an animal in a new maze |
+| `bueai/emergence_test.py`, `bueai/darkroom_test.py` | v0.1 tests | Recording from the brain; a blindfold experiment |
+| `bueai/plots.py`, `bueai/plots_v02.py` | The figures | |
+| `run_v02.py` | Runs the v0.2 experiment | |
+| `tv_check.py` | Takes the noisy-TV result apart | |
+| `run_experiment.py` | Runs the v0.1 experiment | |
+| `tests/` | Unit tests (21) | |
 
 ## The world
 
+v0.2 generates a new 16x16 map for every life. One example:
+
 ```
-############        #  wall       grey,  feels rough, silent
-#......#...#        .  floor      dark
-#.B....#.m.#        B  bell       red,   feels smooth, high pitch, loud,  solid
-#..........#        F  fountain   blue,  feels wet,    mid pitch,  medium, solid
-#....##....#        m  moss       green, feels soft,   low pitch,  quiet, walkable
-#.....#..F.#
-#.m...#....#
-#..........#
-###..m...#.#
-#.....B..#.#
-#F.......#.#
-############
+################        #  wall       grey,   feels rough,  silent
+#mT#.......#####        .  floor      dark
+#..#.........#m#        B  bell       red,    feels smooth, high pitch, loud,   solid
+#............#.#        F  fountain   blue,   feels wet,    mid pitch,  medium, solid
+#............#.#        m  moss       green,  feels soft,   low pitch,  quiet,  walkable
+#......##....#.#        T  noisy TV   random colour every moment, feels glassy, silent, solid
+#..........F...#
+#..............#
+#.m.######.....#
+#.......##.....#
+##....B.##.....#
+##......##.....#
+##.......#.....#
+##.............#
+##.............#
+################
 ```
 
-Every object type shows up in all three senses, and nothing tells the brain
-that "red", "smooth" and "high-pitched" belong together. The map is
-deliberately lopsided (no mirror image or rotation of it matches itself) and
-every area has its own landmark, so "where am I?" has an answer.
+Every map has 1 bell, 1 fountain, 3 moss patches and 1 TV. Every map is fully
+connected, has no mirror or rotation symmetry, and no two walkable cells give
+identical sensations, so "where am I?" always has an answer. v0.1 used one
+fixed 12x12 map without the TV.
 
 The senses:
 
 - **Vision**: a 5x5 patch of RGB colours centred on the agent (75 numbers).
-- **Touch**: the texture under the agent and on its four sides (25 numbers).
-- **Hearing**: loudness of each of the 3 pitches, fading with distance (3 numbers). No direction.
+- **Touch**: the texture under the agent and on its four sides.
+- **Hearing**: loudness of each of the 3 pitches, fading with distance. No direction.
 
-Actions are stay / north / east / south / west, chosen at random with some
-momentum.
+Actions are stay / north / east / south / west.
+
+The **noisy TV** is there to test curiosity. Its colour is pure chance, so it
+can never be predicted. An agent that simply seeks out what it predicts badly
+could stare at it forever.
 
 ## The brain
 
@@ -108,16 +138,17 @@ momentum.
                v                                         |
 vision  --> [vision region ] --+                         |
 touch   --> [touch region  ] --+--> [ recurrent core ] --+--> [predictors] --> next vision
-hearing --> [hearing region] --+        ^         |                        --> next touch
-                                        |         +-- + action ------------^   next hearing
-                          last action --+
+hearing --> [hearing region] --+        ^     |   |                        --> next touch
+                                        |     |   +-- + action ------------^   next hearing
+                          last action --+     |
+                                              +--> [curiosity heads]  (v0.2; read-only)
 ```
 
 One moment of experience, as coded in `Life.live()`:
 
 1. **Sense.** Each sense organ reports its numbers.
 2. **Update the mind.** Each sensory region encodes its own sense, together with the core's previous state (the top-down feedback). The core, a GRU, combines the three encodings with its own memory and the last action taken.
-3. **Act.** A random move.
+3. **Act.** A random move, possibly tilted by curiosity (v0.2).
 4. **Predict.** From the core state and the chosen action, one predictor per sense guesses the next sensation.
 5. **Compare.** The world moves; the squared difference between guess and reality is the prediction error.
 
@@ -125,149 +156,120 @@ One moment of experience, as coded in `Life.live()`:
 signal. `world.ground_truth()` (true position and so on) is only ever read by
 the tests.
 
-## Results (seeds 0, 1, 2)
+### What v0.2 adds
 
-Each cell is the mean, followed by the value from each seed. Every agent lived
-48,000 moments.
+- **Many lives.** A life lasts 512 moments. Then the agent is reborn in a
+  brand-new map with a blank core state. The weights carry over; the contents
+  of the mind do not. Over training each brain passes through about 48,000
+  maps, so no single map can be memorised in the weights.
+- **A bigger core** (256 units) and four times as much experience (192,000
+  moments per agent).
+- **Curiosity heads.** Two small networks read the core and guess the brain's
+  own prediction error: on a first look, and on an immediate second look at the
+  same place. They cannot change the core or the predictors; they only watch.
+- **Three movement styles**, identical except for one multiplier on the random
+  walk:
+  - *random walk*, as in v0.1
+  - *learning progress*: prefer actions where the first-look error is expected
+    to be high and the second-look error low (surprising now, learnable soon)
+  - *plain error*: prefer actions where the first-look error is expected to be
+    high (the naive version that should fall for the TV)
 
-### Prediction got better
+### What "position" means when every map is different
 
-| Sense | Error at start of life | Error at end |
-|---|---|---|
-| vision | 0.0536 | 0.0046 |
-| touch | 0.0796 | 0.0041 |
-| hearing | 0.0330 | 0.0002 |
+Position is (x, y) inside the arena, whose outer wall is the same size in every
+map. It is knowable, but not at a glance: the agent has to find walls and keep
+count of its own steps. One linear probe is shared by all maps, fitted on one
+set of new maps and scored on a different set, so it cannot memorise a map.
 
-![training loss](results/training_loss.png)
+A second probe asks **where the bell is**. That differs in every map, so the
+weights cannot know it. If the core holds it, the brain has stored a fact about
+this particular place.
 
-The curves were still falling when training stopped, so a longer life would
-likely improve every number below.
+## v0.2 results in brief
 
-### Emergence test: where am I?
+Full tables are in [RESULTS.md](RESULTS.md). Seeds 0, 1, 2.
 
-Position error in grid cells, lower is better. A linear probe is fitted on one
-stretch of life and scored on a separate stretch it has never seen.
+### It finds its bearings in a place it has never seen
 
-| Probe reads | Lights on | In darkness | Dark and silent |
-|---|---|---|---|
-| **trained core** | 0.34 [0.36 0.33 0.32] | **0.40** [0.42 0.39 0.38] | **0.61** [0.67 0.64 0.52] |
-| untrained core | 1.02 [1.05 0.95 1.05] | 1.35 [1.31 1.39 1.35] | 2.28 [2.22 2.26 2.35] |
-| raw senses | 0.33 [0.30 0.34 0.35] | 2.42 [2.44 2.39 2.43] | 2.95 [2.89 2.97 2.99] |
-| chance | 4.27 | 4.27 | 4.27 |
+![new map learning](results/v0.2/new_map_learning.png)
 
-"In darkness" blanks vision. "Dark and silent" blanks vision and hearing, so
-only touch and the agent's own movements are left.
+On arrival the trained brain is as lost as the baselines. Within about 50
+moments its position error halves, and it settles near 1.2 cells. The same
+network untrained stays at 3.7 and the raw senses at 4.4, because neither can
+accumulate anything. None of the test maps appeared in training.
 
-![probe results](results/probe_results.png)
+It does **not** learn where the bell is (right panel): 5.10 cells against 5.37
+for chance.
 
-How to read this:
+### The position sense survives the dark
 
-- **Lights on shows nothing.** The raw senses, with no brain at all, find
-  position as well as the trained core does (0.33 vs 0.34). The world is small
-  and a 5x5 view plus three loudness values is nearly a fingerprint of each
-  cell. Position is handed to the agent for free here, so this column cannot
-  tell us whether anything emerged.
-- **Darkness is where it shows.** With vision off, the raw senses fall to 2.42
-  cells and the untrained network to 1.35. The trained core stays at 0.40. It
-  beats both baselines in 3 of 3 seeds, by a wide margin.
-- **Dark and silent is the hardest case.** Touch mostly says "nothing here".
-  The trained core still knows where it is to 0.61 cells, and that error barely
-  grows over 100 steps (top-right panel of the dark-room figure). To do that it
-  has to add up its own movements on a remembered layout. Nobody programmed
-  that; it is the main thing that emerged.
+![dark room in a new place](results/v0.2/darkroom_new_place.png)
 
-### Emergence test: which object is nearest?
+After 300 moments of looking around, the brain keeps its position to 1.33
+cells through 100 dark moments. Agents that saw almost nothing first (dashed)
+still improve while blind, using touch and hearing alone. But having looked
+around makes dark *predictions* only 6 to 9% better, which again says the
+layout itself is not being stored.
 
-Accuracy, higher is better.
+### Curiosity explores faster, and nobody got stuck at the TV
 
-| Probe reads | Lights on | In darkness | Dark and silent |
-|---|---|---|---|
-| trained core | 1.00 | 0.99 | **0.91** [0.91 0.91 0.93] |
-| untrained core | 0.99 | 0.97 | 0.75 [0.77 0.77 0.72] |
-| raw senses | 1.00 | 0.93 | 0.63 [0.62 0.63 0.63] |
-| chance | 0.42 | 0.42 | 0.42 |
+![movement styles](results/v0.2/movement_styles.png)
 
-This probe is **mostly uninformative**. While hearing works, loudness gives the
-answer away and every baseline scores 0.93 or higher. Only when both vision and
-hearing are off does the trained core separate from the baselines (0.91 vs
-0.75).
+Both curious styles see more of the map and get their bearings sooner. The
+planned demonstration, plain-error curiosity stuck at the TV while learning
+progress walks away, **did not happen**: neither style gets stuck.
+`tv_check.py` shows the learning-progress signal does ignore the TV noise that
+the plain-error signal reacts to, but the agent never stays at the TV, mainly
+because the rest of the map never becomes boring to a brain that does not
+remember it.
 
-### Dark-room test
+### Top-down feedback: still not shown
 
-Mean squared prediction error over the 100 moments after vision is blanked.
+![feedback](results/v0.2/feedback.png)
 
-| Predicting | Lights on | Lights out | Guess "no change" | Guess the average |
-|---|---|---|---|---|
-| touch | 0.0030 | 0.0068 | 0.0377 | 0.0785 |
-| hearing | 0.0001 | 0.0003 | 0.0029 | 0.0279 |
-| vision (imagined) | 0.0045 | 0.0119 | 0.0254 | 0.0458 |
-
-![dark room](results/darkroom.png)
-
-- Touch and hearing predictions get about 2 to 3 times worse when the lights
-  go out, then **stay flat** for 100 steps. They remain 5 to 10 times better
-  than guessing "nothing will change".
-- "Vision (imagined)" is the brain's guess at the image it would see, scored
-  against the true image it is not being shown. It is about twice as good as
-  the "no change" guess. In a loose sense the brain keeps picturing the room.
-
-### Does the top-down feedback matter?
-
-I ran the whole experiment again with the feedback connections cut
-(`--no-feedback`).
-
-| Position error | Lights on | In darkness | Dark and silent |
-|---|---|---|---|
-| with feedback | 0.34 | 0.40 [0.42 0.39 0.38] | 0.61 |
-| feedback cut | 0.36 | 0.46 [0.48 0.49 0.42] | 0.63 |
-
-**At this scale, hardly.** There is a small edge in darkness, but with 3 seeds
-whose ranges touch, I would not claim it. The recurrent core already carries
-memory forward by itself, and the inputs are too simple for a region to need
-context to interpret them. This part of the thesis is not yet supported or
-refuted; see v0.2.
+A small edge late in life, in 2 of 3 seeds. Not enough to claim.
 
 ## What these results do not show
 
-- **The map is in the weights, not learned on the fly.** There is one fixed
-  world and the agent lived in it for 48,000 moments (times 64 parallel
-  copies). The weights memorised the layout; the core state tracks position on
-  it. v0.1 says nothing about how fast the brain could learn a *new* room.
-- **The agent practised being blind.** During training, vision and hearing
-  each switch off about a quarter of the time ("nights"). So coping with
-  darkness is trained behaviour, not a surprise. What was never given is any
-  coordinate or position label; that part is emergent.
-- **Untrained networks are a strong baseline.** A random recurrent network
-  already gets 1.02 cells with the lights on. Comparing only against "chance"
-  (4.27) would have made the result look far more impressive than it is.
-- **A linear probe finding position does not mean the brain "uses" position.**
-  It shows the information is present in an easily readable form.
-- **Three seeds on one map.** Consistent, but a small sample.
+- **It locates itself; it does not store the place.** The thesis needs both.
+- **The agent is told when the place changes**, by the blank core state at each
+  new life.
+- **Finding position may be a learned routine** (find walls, count steps) held
+  in the weights. What is built within a life is the estimate.
+- **The noisy-TV comparison is untested**, not passed: this world had no trap
+  to fall into.
+- **Three seeds.** Enough for the big effects, not for the small ones.
 
-## Decisions I made where the idea was open
+## Plan for v0.3
 
-| Topic | Decision | Why |
-|---|---|---|
-| One world or many | One fixed map | "Absolute position" needs a fixed world |
-| Episodes | None: one continuous life, learning online, no replay | Closest to "accumulated experience" |
-| Parallel lives | 64 copies of the agent at once | CPU speed only |
-| Heading | None; vision is centred on the agent but never rotated | Keeps v0.1 small |
-| Motor copy | The core is told the last action it took | Without it the brain cannot track its own movement. Brains do this too ("efference copy"). |
-| Blackouts in training | Vision and hearing each go off ~25% of the time | Otherwise the dark-room test measures confusion at a never-seen input |
-| Movement | Random with momentum | Pure coin-flips barely leave the starting area |
-| Loss | Mean squared error for all senses | One uniform meaning of "prediction error" |
-| Untrained baseline | An exact copy of the same network before training | The fairest "same network untrained" |
+1. **Continuous life with unannounced moves.** One unbroken life. At
+   unpredictable moments the agent is placed in a different map, with no reset
+   and no signal. It has to notice from its own prediction errors that the
+   place has changed, drop its old estimate and rebuild. Measure how long
+   noticing and recovering take.
+2. **Get "what is where" to emerge**: make remembering pay (3x3 view, longer
+   blackouts, more return visits), and give the core a memory it can write to
+   and look things up in.
+3. **A fair noisy-TV test** once 2 works: a bigger TV, longer lives, curiosity
+   that looks several steps ahead.
+4. **Give feedback a job**: ambiguous senses, more seeds.
 
-## Moving to 3D later (v0.2 / v0.3)
+Details and reasons are at the end of the v0.2 entry in
+[RESULTS.md](RESULTS.md).
+
+## Moving to 3D later
 
 The brain never mentions "grid", "vision" or any specific sense. It is built
 from `world.sense_shapes`, a dictionary of names and shapes, and loops over
 whatever is in it. To move to MiniWorld or MuJoCo:
 
-1. **Write a new world class** with the same five members as `GridWorld`:
+1. **Write a new world class** with the same members as `GridWorld`:
    `sense_shapes`, `n_actions`, `reset(n_agents, seed)`, `step(actions)`,
    `ground_truth()`. `reset` and `step` return a dict of NumPy arrays with one
-   row per agent.
+   row per agent. For many-worlds training also provide `new_life(agents)`,
+   which gives those agents a new place and returns their first sensations
+   (see `ManyWorlds`).
 2. **Swap the vision region** for a deeper CNN. Any module with
    `forward(image, core_state)` returning `(batch, latent_size)` and a
    `latent_size` attribute works:
@@ -277,27 +279,12 @@ whatever is in it. To move to MiniWorld or MuJoCo:
                  regions={"vision": MyBiggerCNN(...)})
    ```
 
-`Life`, `train()`, both tests and the plots then run unchanged.
-`tests/test_sanity.py` has a test that builds a brain with a 9x9 image and a
-made-up "smell" sense to confirm no brain code needs to change.
+`Life` and `train()` then run unchanged. The v0.2 tests build a `ManyWorlds`
+themselves and read its ground truth (position, bell, share of map seen), so
+they need a small edit to take the new world instead. `tests/test_sanity.py`
+has a test that builds a brain with a 9x9 image and a made-up "smell" sense to
+confirm no brain code needs to change.
 
 Two things will need real work in 3D: continuous actions (the predictors take
 a one-hot action today), and predicting raw pixels with squared error, which
 gets blurry. Predicting in the region's latent space is the usual fix.
-
-## Suggested v0.2 experiments
-
-1. **Make position hard to see.** Use a larger map (24x24) or a 3x3 view, so
-   one glance no longer identifies the cell. Then the lights-on probe becomes
-   a real test too.
-2. **Many worlds.** Generate a new random map for each life (or every few
-   thousand moments). Then the map cannot live in the weights and the brain
-   must build it within a lifetime, which is much closer to the Fluctlight idea.
-3. **Give feedback a job.** Add noise or ambiguity to the senses (two objects
-   that look alike but sound different), where knowing the context should help
-   a region interpret its input. Rerun the `--no-feedback` comparison there.
-4. **Cross-sense binding test.** Probe whether hearing a bell in the dark makes
-   the brain predict *red* nearby. v0.1 has the ingredients but does not test it.
-5. **Let the agent choose its actions**, for example by seeking out places
-   where its predictions are worst (curiosity), instead of walking at random.
-6. **Train longer and with more seeds** (`--updates 3000 --seeds 0 1 2 3 4`).

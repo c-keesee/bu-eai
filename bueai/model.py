@@ -129,7 +129,7 @@ def default_region(input_shape, core_size, latent_size):
 
 class Brain(nn.Module):
     def __init__(self, sense_shapes, n_actions, core_size=128, latent_size=32, regions=None,
-                 use_feedback=True):
+                 use_feedback=True, predictor_size=128, curiosity_heads=False):
         """
         sense_shapes: dict, sense name -> shape of one observation.
                       Comes straight from world.sense_shapes.
@@ -140,6 +140,9 @@ class Brain(nn.Module):
         use_feedback: set False to cut the top-down connections (the regions
                       then receive zeros instead of the core state). Only for
                       the experiment "does feedback actually matter?".
+        predictor_size: width of the hidden layer inside each predictor.
+        curiosity_heads: add the two small "how wrong will I be?" networks
+                      used for curious movement (v0.2, see curiosity() below).
         """
         super().__init__()
         self.sense_shapes = dict(sense_shapes)
@@ -170,12 +173,31 @@ class Brain(nn.Module):
         # be taken. Output: a guess at that sense's NEXT observation.
         self.predictors = nn.ModuleDict({
             name: nn.Sequential(
-                nn.Linear(core_size + n_actions, 128),
+                nn.Linear(core_size + n_actions, predictor_size),
                 nn.ReLU(),
-                nn.Linear(128, math.prod(shape)),
+                nn.Linear(predictor_size, math.prod(shape)),
             )
             for name, shape in self.sense_shapes.items()
         })
+
+        # v0.2 -- self-monitoring for curiosity. Two small networks that look
+        # at (core state, action) and guess the brain's OWN upcoming error:
+        #
+        #   first_look:   how wrong will my prediction be if I take this action?
+        #   second_look:  ...and how wrong would I STILL be about that same
+        #                 place one moment later, after having looked at it?
+        #
+        # Their difference is "how much would one look teach me" (see
+        # curiosity()). They are trained on the brain's own measured errors
+        # (training.py) and read a detached copy of the core state, so they
+        # cannot change what the core learns: the world model is still
+        # trained by sensory prediction error alone.
+        self.has_curiosity = curiosity_heads
+        if curiosity_heads:
+            def error_guesser():
+                return nn.Sequential(nn.Linear(core_size + n_actions, 64), nn.ReLU(), nn.Linear(64, 1))
+            self.first_look = error_guesser()
+            self.second_look = error_guesser()
 
     def initial_state(self, n_agents):
         """A blank mind: all zeros. Shape (n_agents, core_size)."""
@@ -206,3 +228,44 @@ class Brain(nn.Module):
             name: predictor(x).reshape(-1, *self.sense_shapes[name])
             for name, predictor in self.predictors.items()
         }
+
+    # ------------------------------------------------------------------
+    # v0.2: curiosity
+    # ------------------------------------------------------------------
+
+    def expected_errors(self, core_state, action):
+        """The two self-monitoring guesses for (core state, action).
+
+        Returns (first_look, second_look), each of shape (n_agents,).
+        softplus keeps them positive (an error cannot be negative). The core
+        state is detached: these heads read the mind but do not shape it.
+        """
+        x = torch.cat([core_state.detach(), action], dim=1)
+        softplus = nn.functional.softplus
+        return softplus(self.first_look(x)).squeeze(1), softplus(self.second_look(x)).squeeze(1)
+
+    @torch.no_grad()
+    def curiosity(self, core_state, style):
+        """How interesting is each possible action? Returns (n_agents, n_actions).
+
+        style "error":     plain prediction-error curiosity.
+                           score = the error I expect on first look.
+                           Known flaw (the "noisy TV problem"): pure noise is
+                           always badly predicted, so it scores high forever
+                           and the agent gets stuck staring at it.
+
+        style "progress":  expected learning progress.
+                           score = expected error on first look
+                                 - expected error on a second look
+                           An unexplored corner is surprising once and then
+                           known: large first, small second -> high score.
+                           TV static is just as surprising the second time:
+                           the two cancel -> score near zero.
+        """
+        n_agents = core_state.shape[0]
+        # Ask about every action at once: repeat each agent's state n_actions times.
+        states = core_state.repeat_interleave(self.n_actions, dim=0)
+        actions = torch.eye(self.n_actions).repeat(n_agents, 1)
+        first, second = self.expected_errors(states, actions)
+        score = first if style == "error" else torch.relu(first - second)
+        return score.reshape(n_agents, self.n_actions)
