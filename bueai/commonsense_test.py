@@ -378,6 +378,8 @@ def run_test(brain, test, n_scenes=200, seed=0, memoryless=False):
 
     obs = to_torch(world.observe())
     core = brain.initial_state(n_agents)
+    memory = brain.new_memory(n_agents) if getattr(brain, "has_memory", False) else None
+    extras = {} if memory is None else {"memory": memory}
     last_action = np.zeros(n_agents, dtype=np.int64)
     last_seen = {name: o.clone() for name, o in obs.items()}
     surprise, yardstick = [], []
@@ -389,7 +391,7 @@ def run_test(brain, test, n_scenes=200, seed=0, memoryless=False):
         last_seen = dict(obs, vision=torch.where(seen, obs["vision"], last_seen["vision"]))
         if memoryless:
             core = brain.initial_state(n_agents)
-        core = brain.perceive(inputs, one_hot(last_action), core)
+        core = brain.perceive(inputs, one_hot(last_action), core, **extras)
         action = stage.actions(t)
         prediction = brain.predict(core, one_hot(action))
 

@@ -75,6 +75,9 @@ class Life:
 
         self.observations = self._to_torch(world.reset(n_agents, seed=seed))
         self.core_state = brain.initial_state(n_agents)
+        # (v0.3) Brains with an episodic memory keep its contents in a separate
+        # store, which lives and dies with the agent just like the core state.
+        self.memory = brain.new_memory(n_agents) if getattr(brain, "has_memory", False) else None
         self.last_action = np.zeros(n_agents, dtype=np.int64)        # "stay"
         # sense_on[name][i] is False while agent i's sense `name` is blanked.
         self.sense_on = {name: np.ones(n_agents, dtype=bool) for name in brain.sense_shapes}
@@ -122,8 +125,9 @@ class Life:
             #    feedback), the core integrates them with its memory.
             if self.memoryless:
                 self.core_state = self.brain.initial_state(self.n_agents)
+            extras = {} if self.memory is None else {"memory": self.memory}
             self.core_state = self.brain.perceive(
-                inputs, self._one_hot(self.last_action), self.core_state)
+                inputs, self._one_hot(self.last_action), self.core_state, **extras)
             core_log.append(self.core_state)
             if record:
                 senses_log.append(torch.cat([inputs[n].flatten(1) for n in names], dim=1))
@@ -230,6 +234,8 @@ class Life:
         keep = torch.ones(self.n_agents, 1)
         keep[agents] = 0.0
         self.core_state = self.core_state * keep       # wipe the reborn agents' core state
+        if self.memory is not None:
+            self.memory.forget(agents)                 # ...and their episodic memories
         self.last_action = self.last_action.copy()
         self.last_action[agents] = STAY
         self.age[agents] = 0
@@ -288,6 +294,7 @@ class TrainConfig:
     final_learning_rate: float = None   # if set, the learning rate glides down to this value...
     decay_from: float = 0.0             # ...starting after this fraction of training (0 = from the start)
     memoryless: bool = False            # v0.3 control: no memory at all (see Life)
+    clip: float = 1.0                   # largest allowed gradient size per update (None = no limit)
 
 
 def prediction_loss(experience):
@@ -396,7 +403,8 @@ def train(brain, world, config=None, verbose=True, tag="", checkpoint=None, save
         total.backward()
         # Safety against huge steps. The self-monitoring heads are clipped
         # separately so that their gradients can never shrink the world model's.
-        torch.nn.utils.clip_grad_norm_(model_weights, max_norm=1.0)
+        if config.clip:
+            torch.nn.utils.clip_grad_norm_(model_weights, max_norm=config.clip)
         if head_weights:
             torch.nn.utils.clip_grad_norm_(head_weights, max_norm=1.0)
         optimizer.step()
@@ -416,7 +424,7 @@ def train(brain, world, config=None, verbose=True, tag="", checkpoint=None, save
             if checkpoint:
                 checkpoint(update, brain)
             if save_path:
-                keep = ("observations", "core_state", "last_action", "sense_on", "age", "rng")
+                keep = ("observations", "core_state", "last_action", "sense_on", "age", "rng", "memory")
                 torch.save({"brain": brain.state_dict(), "optimizer": optimizer.state_dict(),
                             "world": world.__dict__, "life": {k: getattr(life, k) for k in keep},
                             "history": history, "update": update,
