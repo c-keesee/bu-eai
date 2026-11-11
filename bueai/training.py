@@ -46,7 +46,7 @@ class Life:
     """
 
     def __init__(self, brain, world, n_agents, seed=0, persistence=0.6, blackouts=None,
-                 movement="random", curiosity_strength=3.0, life_length=None):
+                 movement="random", curiosity_strength=3.0, life_length=None, memoryless=False):
         """
         persistence: chance of repeating the previous action instead of picking
                      a fresh random one (so the walk has some momentum).
@@ -60,7 +60,10 @@ class Life:
                                  expected prediction error (naive curiosity)
         curiosity_strength: how hard curiosity tilts the walk (0 = not at all).
         life_length: moments per life. None = one endless life (v0.1).
+        memoryless:  (v0.3 control) wipe the core state before every moment,
+                     so the brain can only use what it senses right now.
         """
+        self.memoryless = memoryless
         self.brain, self.world = brain, world
         self.n_agents = n_agents
         self.persistence = persistence
@@ -117,6 +120,8 @@ class Life:
 
             # 2. UPDATE THE MIND. Regions encode the senses (with top-down
             #    feedback), the core integrates them with its memory.
+            if self.memoryless:
+                self.core_state = self.brain.initial_state(self.n_agents)
             self.core_state = self.brain.perceive(
                 inputs, self._one_hot(self.last_action), self.core_state)
             core_log.append(self.core_state)
@@ -282,6 +287,7 @@ class TrainConfig:
     life_length: int = None             # moments per life; None = one endless life
     final_learning_rate: float = None   # if set, the learning rate glides down to this value...
     decay_from: float = 0.0             # ...starting after this fraction of training (0 = from the start)
+    memoryless: bool = False            # v0.3 control: no memory at all (see Life)
 
 
 def prediction_loss(experience):
@@ -342,7 +348,7 @@ def train(brain, world, config=None, verbose=True, tag="", checkpoint=None, save
     config = config or TrainConfig()
     life = Life(brain, world, config.n_agents, seed=config.seed, blackouts=config.blackouts,
                 movement=config.movement, curiosity_strength=config.curiosity_strength,
-                life_length=config.life_length)
+                life_length=config.life_length, memoryless=config.memoryless)
     optimizer = torch.optim.Adam(brain.parameters(), lr=config.learning_rate)
 
     is_head = lambda name: name.startswith(("first_look", "second_look"))
