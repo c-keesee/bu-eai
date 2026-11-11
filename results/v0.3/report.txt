@@ -1,0 +1,135 @@
+==============================================================================================================
+BU-EAI v0.3 RESULTS   (seeds [0, 1, 2]; each cell = mean [one value per seed])
+==============================================================================================================
+Each brain lived 96,000 moments per agent across about 24,135 maps.
+  core         3 seed(s),  25.3 min training each
+  pays         3 seed(s),  25.1 min training each
+  memory       3 seed(s),  40.0 min training each
+  both         3 seed(s),  38.9 min training each
+
+COMMON-SENSE TESTS.  Each cell: share of scenes where the impossible versions were more surprising (chance = 50%),
+then 'x' how many times more surprising they were on average (x1.00 = no difference).
+                        core                      pays                      memory                    both                      untrained                 expect no change          
+  permanence_screen_1   100% x1.19 [100 100 100]  100% x1.13 [100 100 100]  100% x1.16 [100 100 100]  100% x1.12 [100 100 100]  67% x1.00 [88 63 49]      50% x1.00 [50 50 50]      
+  permanence_screen_3   68% x1.00 [42 77 84]      33% x1.00 [13 41 46]      27% x1.00 [21 25 34]      30% x1.00 [0 33 56]       41% x1.00 [50 46 28]      50% x1.00 [50 50 50]      
+  permanence_dark_5     100% x1.98 [100 100 100]  100% x1.30 [100 100 100]  100% x1.40 [100 100 100]  100% x1.19 [100 100 100]  49% x1.00 [0 46 100]      100% x99.00 [100 100 100] 
+  permanence_dark_30    100% x1.09 [100 100 100]  100% x1.01 [100 100 100]  90% x1.02 [100 70 100]    100% x1.01 [100 100 100]  51% x1.00 [50 49 52]      100% x99.00 [100 100 100] 
+  solidity_roller       100% x2.57 [100 100 100]  100% x2.14 [100 100 100]  100% x2.79 [100 100 100]  100% x2.40 [100 100 100]  0% x0.98 [0 0 0]          0% x0.92 [0 0 0]          
+  solidity_ball         0% x0.94 [0 0 1]          14% x0.94 [0 0 42]        12% x0.94 [12 23 0]       21% x0.95 [38 0 24]       0% x0.98 [0 0 0]          0% x0.94 [0 0 0]          
+  causality_watch       100% x1.31 [100 100 100]  98% x1.21 [100 100 93]    100% x1.28 [100 100 100]  96% x1.19 [95 100 93]     42% x1.00 [43 33 50]      0% x0.82 [0 0 0]          
+  causality_act         100% x1.26 [100 100 100]  100% x1.25 [100 100 100]  100% x1.27 [100 100 100]  100% x1.26 [100 100 100]  0% x0.98 [1 0 0]          100% x1.16 [100 100 100]  
+  self_starting         100% x1.85 [100 100 100]  100% x1.89 [100 100 100]  100% x1.78 [100 100 100]  100% x1.86 [100 100 100]  56% x1.00 [75 52 42]      100% x1.04 [100 100 100]  
+  continuity_jump       89% x2.35 [100 90 76]     44% x1.26 [100 26 6]      70% x2.66 [100 100 10]    53% x1.64 [76 75 10]      0% x0.95 [0 0 0]          0% x0.23 [0 0 0]          
+  continuity_screens    0% x0.12 [0 0 0]          0% x0.14 [0 0 0]          0% x0.13 [0 0 0]          0% x0.14 [0 0 0]          0% x0.98 [0 0 0]          0% x0.08 [0 0 0]          
+
+WHAT IS WHERE in a never-seen map, after 350-400 moments there.  Probe error in grid cells (lower is better).
+                        core                      pays                      memory                    both                      untrained                 chance                    
+  position              1.57 [1.43 1.69 1.58]     1.56 [1.48 1.59 1.60]     1.65 [1.51 1.64 1.78]     1.72 [1.57 1.81 1.77]     3.61 [3.63 3.69 3.51]     5.82 [5.87 5.77 5.81]     
+  bell                  4.93 [5.16 5.06 4.58]     4.94 [5.04 5.08 4.71]     4.96 [4.79 5.01 5.07]     5.09 [4.99 5.08 5.21]     5.39 [5.40 5.38 5.40]     5.34 [5.35 5.29 5.37]     
+  ball                  7.74 [7.81 7.59 7.82]     7.74 [7.78 7.56 7.89]     7.74 [7.80 7.60 7.82]     7.79 [7.85 7.60 7.91]     7.76 [7.78 7.62 7.88]     7.65 [7.65 7.50 7.81]     
+
+--- MATCHED PAIRS: impossible version vs the possible version that ends the same way ---
+
+permanence_screen_1  (object permanence: roller passes under a screen, hidden for 1 moment)
+                                                                  core                      pays                      memory                    both                      untrained                 expect no change          
+    'goes in, never comes out' vs 'nothing goes in, nothing comes out'100% x2.94 [100 100 100]  100% x2.40 [100 100 100]  100% x2.59 [100 100 100]  100% x2.37 [100 100 100]  43% x1.00 [27 92 11]      50% x0.00 [50 50 50]      
+    'nothing goes in, one comes out' vs 'goes in, comes out'      96% x1.17 [100 100 88]    100% x1.11 [100 100 100]  100% x1.14 [100 100 100]  100% x1.10 [100 100 100]  58% x1.00 [76 9 89]       50% x1.00 [50 50 50]      
+    mean surprise in the window, per version (x 1000):
+      possible   goes in, comes out                                27.47                     24.53                     25.13                     25.26                     502.39                    33.90                     
+      IMPOSSIBLE goes in, never comes out                          1.02                      1.01                      0.91                      0.97                      464.44                    0.00                      
+      possible   nothing goes in, nothing comes out                0.35                      0.43                      0.36                      0.41                      464.48                    0.00                      
+      IMPOSSIBLE nothing goes in, one comes out                    32.20                     27.22                     28.67                     27.77                     502.44                    33.90                     
+
+permanence_screen_3  (object permanence: roller passes under a screen, hidden for 3 moments)
+                                                                  core                      pays                      memory                    both                      untrained                 expect no change          
+    'goes in, never comes out' vs 'nothing goes in, nothing comes out'75% x1.00 [47 79 100]     49% x1.00 [49 57 42]      60% x1.00 [62 59 59]      47% x1.00 [21 46 74]      30% x1.00 [14 48 27]      50% x0.00 [50 50 50]      
+    'nothing goes in, one comes out' vs 'goes in, comes out'      50% x1.00 [51 65 35]      24% x1.00 [17 30 25]      23% x1.00 [12 26 32]      46% x1.00 [31 50 56]      70% x1.00 [87 50 73]      50% x1.00 [50 50 50]      
+    mean surprise in the window, per version (x 1000):
+      possible   goes in, comes out                                13.78                     13.95                     13.75                     13.80                     594.40                    22.60                     
+      IMPOSSIBLE goes in, never comes out                          0.46                      0.60                      0.41                      0.51                      575.66                    0.00                      
+      possible   nothing goes in, nothing comes out                0.45                      0.60                      0.41                      0.51                      575.67                    0.00                      
+      IMPOSSIBLE nothing goes in, one comes out                    13.78                     13.94                     13.74                     13.80                     594.41                    22.60                     
+
+permanence_dark_5  (object permanence: ball in view, lights out for 5 moments)
+                                                                  core                      pays                      memory                    both                      untrained                 expect no change          
+    'ball there, gone' vs 'no ball, still none'                   100% x2.69 [100 100 100]  100% x1.45 [100 100 100]  100% x1.55 [100 99 100]   100% x1.45 [100 100 100]  66% x1.00 [65 76 57]      100% x99.00 [100 100 100] 
+    'no ball, one appeared' vs 'ball there, still there'          100% x1.80 [100 100 100]  99% x1.28 [97 100 100]    100% x1.35 [100 100 100]  93% x1.13 [100 99 79]     42% x1.00 [28 24 72]      100% x99.00 [100 100 100] 
+    mean surprise in the window, per version (x 1000):
+      possible   ball there, still there                           8.41                      12.15                     10.63                     13.00                     225.59                    0.00                      
+      IMPOSSIBLE ball there, gone                                  6.65                      4.55                      4.21                      4.24                      204.78                    12.37                     
+      possible   no ball, still none                               3.04                      3.28                      2.64                      2.85                      204.77                    0.00                      
+      IMPOSSIBLE no ball, one appeared                             14.31                     15.17                     14.14                     14.49                     225.58                    12.37                     
+
+permanence_dark_30  (object permanence: ball in view, lights out for 30 moments)
+                                                                  core                      pays                      memory                    both                      untrained                 expect no change          
+    'ball there, gone' vs 'no ball, still none'                   100% x1.11 [100 100 100]  90% x1.07 [100 70 100]    88% x1.10 [100 89 76]     100% x1.06 [100 100 100]  52% x1.00 [52 51 53]      100% x99.00 [100 100 100] 
+    'no ball, one appeared' vs 'ball there, still there'          84% x1.08 [51 100 100]    50% x1.00 [36 71 42]      38% x1.00 [84 3 26]       49% x1.00 [77 44 25]      49% x1.00 [49 48 49]      100% x99.00 [100 100 100] 
+    mean surprise in the window, per version (x 1000):
+      possible   ball there, still there                           13.97                     15.74                     15.73                     14.95                     225.63                    0.00                      
+      IMPOSSIBLE ball there, gone                                  4.32                      4.42                      4.84                      3.89                      204.82                    12.37                     
+      possible   no ball, still none                               3.91                      4.16                      4.37                      3.65                      204.82                    0.00                      
+      IMPOSSIBLE no ball, one appeared                             14.98                     15.73                     15.66                     14.98                     225.63                    12.37                     
+
+solidity_roller  (solidity: roller rolls towards a wall (or towards nothing))
+                                                                  core                      pays                      memory                    both                      untrained                 expect no change          
+    'wall: roller goes through' vs 'no wall: roller keeps rolling'100% x4.54 [100 100 100]  100% x3.09 [100 100 100]  100% x5.03 [100 100 100]  100% x3.60 [100 100 100]  100% x1.03 [100 100 100]  0% x0.90 [0 0 0]          
+    'no wall: roller turns away from nothing' vs 'wall: roller turns away'100% x1.62 [100 100 100]  100% x1.46 [100 100 100]  99% x1.75 [100 100 96]    100% x1.62 [100 100 100]  0% x0.94 [0 0 0]          50% x1.00 [50 50 50]      
+    mean surprise in the window, per version (x 1000):
+      possible   wall: roller turns away                           38.73                     35.21                     35.30                     34.73                     476.51                    38.99                     
+      IMPOSSIBLE wall: roller goes through                         89.41                     93.63                     93.53                     90.87                     462.20                    131.33                    
+      possible   no wall: roller keeps rolling                     21.03                     37.74                     23.66                     29.72                     447.12                    145.20                    
+      IMPOSSIBLE no wall: roller turns away from nothing           62.65                     50.87                     61.63                     56.01                     446.34                    38.99                     
+
+solidity_ball  (solidity: ball rolls towards a wall (or towards nothing))
+                                                                  core                      pays                      memory                    both                      untrained                 expect no change          
+    'wall: ball goes through' vs 'no wall: ball keeps rolling'    1% x0.94 [0 0 3]          14% x0.94 [0 0 42]        12% x0.95 [12 23 0]       21% x0.96 [38 0 24]       100% x1.03 [100 100 100]  0% x0.94 [0 0 0]          
+    'no wall: ball stops dead' vs 'wall: ball stops'              25% x0.69 [59 16 0]       8% x0.72 [25 0 0]         10% x0.68 [12 16 1]       8% x0.67 [23 0 0]         0% x0.94 [0 0 0]          50% x0.00 [50 50 50]      
+    mean surprise in the window, per version (x 1000):
+      possible   wall: ball stops                                  0.97                      0.66                      1.23                      0.99                      479.59                    0.00                      
+      IMPOSSIBLE wall: ball goes through                           121.17                    117.54                    117.86                    116.63                    463.84                    139.87                    
+      possible   no wall: ball keeps rolling                       128.62                    124.56                    124.51                    122.09                    448.76                    149.47                    
+      IMPOSSIBLE no wall: ball stops dead                          0.71                      0.47                      0.83                      0.67                      449.53                    0.00                      
+
+causality_watch  (causality: watching a roller hit a ball, or roll past it)
+                                                                  core                      pays                      memory                    both                      untrained                 expect no change          
+    'hit: ball does not move' vs 'no hit: ball stays'             100% x2.58 [100 100 100]  100% x2.33 [100 100 100]  99% x2.31 [100 100 98]    100% x2.28 [100 100 100]  51% x1.00 [70 56 28]      33% x0.86 [30 34 35]      
+    'no hit: ball moves anyway' vs 'hit: ball moves'              100% x1.11 [100 100 100]  71% x1.04 [63 100 51]     96% x1.10 [100 88 100]    59% x1.02 [76 66 36]      48% x1.00 [51 25 68]      0% x0.81 [0 0 0]          
+    mean surprise in the window, per version (x 1000):
+      possible   hit: ball moves                                   94.93                     101.56                    93.58                     101.90                    488.31                    178.80                    
+      IMPOSSIBLE hit: ball does not move                           38.11                     37.21                     37.45                     36.08                     485.99                    38.99                     
+      possible   no hit: ball stays                                14.86                     16.20                     16.45                     15.89                     485.84                    45.20                     
+      IMPOSSIBLE no hit: ball moves anyway                         105.34                    105.73                    102.84                    103.76                    487.31                    144.67                    
+
+causality_act  (causality: the agent pushes a ball itself, or stands still)
+                                                                  core                      pays                      memory                    both                      untrained                 expect no change          
+    'I push: ball does not move' vs 'I do nothing: ball stays'    100% x3.19 [100 100 100]  100% x2.34 [100 100 100]  100% x2.68 [100 100 100]  100% x2.34 [100 100 100]  10% x0.98 [5 0 25]        50% x0.00 [50 50 50]      
+    'I do nothing: ball moves anyway' vs 'I push: ball moves'     100% x1.21 [100 100 100]  100% x1.21 [100 100 100]  100% x1.21 [100 100 100]  100% x1.22 [100 100 100]  7% x0.97 [8 14 0]         100% x1.16 [100 100 100]  
+    mean surprise in the window, per version (x 1000):
+      possible   I push: ball moves                                64.08                     63.78                     61.51                     62.80                     441.77                    75.13                     
+      IMPOSSIBLE I push: ball does not move                        5.92                      5.82                      6.70                      6.20                      439.94                    0.00                      
+      possible   I do nothing: ball stays                          1.86                      2.46                      2.53                      2.68                      448.24                    0.00                      
+      IMPOSSIBLE I do nothing: ball moves anyway                   77.27                     77.12                     74.36                     76.54                     428.99                    87.10                     
+
+self_starting  (causality: a resting ball / roller sets off by itself)
+                                                                  core                      pays                      memory                    both                      untrained                 expect no change          
+    'ball sets off by itself' vs 'roller sets off by itself'      100% x1.74 [100 100 100]  100% x1.78 [100 100 100]  100% x1.68 [100 100 100]  100% x1.75 [100 100 100]  87% x1.01 [62 100 100]    100% x1.04 [100 100 100]  
+    mean surprise in the window, per version (x 1000):
+      IMPOSSIBLE ball sets off by itself                           90.94                     89.69                     88.01                     88.25                     449.30                    99.47                     
+      possible   ball stays                                        1.84                      2.50                      2.50                      2.70                      447.83                    0.00                      
+      possible   roller sets off by itself                         52.44                     50.68                     52.34                     50.62                     446.18                    95.20                     
+      possible   roller stays                                      9.19                      10.45                     9.16                      10.52                     447.80                    0.00                      
+
+continuity_jump  (continuity: roller in plain view jumps to a far-away cell)
+                                                                  core                      pays                      memory                    both                      untrained                 expect no change          
+    'jumps to a far cell' vs 'rolls on normally'                  89% x2.35 [100 90 76]     44% x1.26 [100 26 6]      70% x2.66 [100 100 10]    53% x1.64 [76 75 10]      0% x0.95 [0 0 0]          0% x0.23 [0 0 0]          
+    mean surprise in the window, per version (x 1000):
+      possible   rolls on normally                                 21.03                     37.74                     23.66                     29.72                     447.12                    145.20                    
+      IMPOSSIBLE jumps to a far cell                               44.43                     32.14                     42.92                     37.22                     426.83                    33.90                     
+
+continuity_screens  (continuity: roller passes two screens with a gap between them)
+                                                                  core                      pays                      memory                    both                      untrained                 expect no change          
+    'skips the gap' vs 'seen crossing the gap'                    0% x0.12 [0 0 0]          0% x0.14 [0 0 0]          0% x0.13 [0 0 0]          0% x0.14 [0 0 0]          0% x0.98 [0 0 0]          0% x0.08 [0 0 0]          
+    mean surprise in the window, per version (x 1000):
+      possible   seen crossing the gap                             103.39                    96.85                     98.10                     94.18                     818.07                    133.90                    
+      IMPOSSIBLE skips the gap                                     12.49                     13.21                     12.72                     13.13                     798.33                    11.30                     
+==============================================================================================================

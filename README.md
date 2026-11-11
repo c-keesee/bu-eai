@@ -8,13 +8,13 @@ separate sensory regions that feed a shared recurrent core, and the core feeds
 back into the regions. It has **no language, no reward, no labels and no
 goal**. The only thing it ever learns is to predict what it will sense next.
 
-Afterwards we freeze it and ask: did it work out things nobody told it, such
-as where it is?
+Afterwards we freeze it and ask: did it work out things nobody told it?
 
 | Version | Question | Short answer |
 |---|---|---|
-| **v0.2** (current) | Dropped into a place it has never seen, does it build a map within one life? | It finds **where it is**: error falls from 4.55 to 1.19 cells in 400 moments, against 3.68 untrained and 4.43 for the raw senses. It does **not** yet remember **what is where**. |
-| v0.1 (tag `v0.1`) | In one fixed world, does a sense of position emerge from prediction alone? | Yes: 0.40 cells in the dark, against 1.35 untrained and 2.42 raw senses. But that map was memorised in the weights. |
+| **v0.3** (current) | In a world where things move, hide and react, does basic common sense about objects appear, tested the way babies are tested? Does a memory help? | **Partly.** It is surprised when a roller goes through a wall, when a roller jumps, and when a lifeless ball moves by itself. It has **nothing** about things it cannot see: it expects whatever goes under a screen to be gone. Adding memory did not help. |
+| v0.2 (tag `v0.2`) | Dropped into a place it has never seen, does it build a map within one life? | It finds **where it is** (error 4.55 to 1.19 cells in 400 moments). It does not remember **what is where**. |
+| v0.1 (tag `v0.1`) | In one fixed world, does a sense of position emerge from prediction alone? | Yes: 0.40 cells in the dark, against 1.35 untrained. But that map was memorised in the weights. |
 
 All numbers, tables, the things that did not work, and the reasoning behind
 each choice are in **[RESULTS.md](RESULTS.md)**.
@@ -25,266 +25,297 @@ each choice are in **[RESULTS.md](RESULTS.md)**.
 pip install -r requirements.txt
 ```
 
-The v0.2 experiment (12 brains: 4 conditions x 3 seeds; about 90 minutes on 4
-CPU cores):
+The v0.3 experiment (12 brains: 4 memory conditions x 3 seeds; about 2 hours on
+4 CPU cores):
 
 ```bash
-python run_v02.py
+python run_v03.py
 ```
 
-If it gets interrupted, this carries on where it stopped and gives the same
-result as an uninterrupted run:
+Run every test again on the saved brains, with no training (a few minutes):
 
 ```bash
-python run_v02.py --resume
+python run_v03.py --retest
+```
+
+Carry on after an interruption (gives the same result as an uninterrupted run):
+
+```bash
+python run_v03.py --resume
 ```
 
 A 2-minute smoke test (its numbers mean nothing):
 
 ```bash
-python run_v02.py --quick
+python run_v03.py --quick
 ```
 
-Reprint the report and redraw the plots from saved runs:
+Reprint the report and redraw the figures from saved results:
 
 ```bash
-python run_v02.py --report-only
+python run_v03.py --report-only
 ```
 
-The noisy-TV follow-up (needs the brains saved by a finished `run_v02.py`):
+Check whether the brains with an external memory use it:
 
 ```bash
-python tv_check.py
+python memory_check.py
 ```
 
-The v0.1 experiment is unchanged and still gives its original numbers (2.5
-minutes):
+Earlier versions still run and still give their original numbers:
+
+```bash
+python run_v02.py
+```
 
 ```bash
 python run_experiment.py
 ```
 
-Unit tests for the building blocks:
+Unit tests for the building blocks (43, about 15 seconds):
 
 ```bash
 python -m pytest tests/ -q
 ```
 
 Everything is deterministic: the same seeds give the same numbers. Outputs go
-to `results/v0.2/` and `results/v0.1/`.
+to `results/v0.3/`, `results/v0.2/` and `results/v0.1/`.
 
 ## The files
 
 | File | What it is | Brain analogy |
 |---|---|---|
-| `bueai/world.py` | v0.1 grid world: map, objects, movement, ground truth | The outside world. Not part of the brain. |
-| `bueai/many_worlds.py` | v0.2: random map generator, one map per agent, the noisy TV | Many different places to grow up in |
-| `bueai/senses.py` | `Vision`, `Touch`, `Hearing` | Sense organs: eye, skin, ear |
-| `bueai/model.py` | `SensoryRegion`, `VisionRegion`, `Brain`, curiosity heads | Sensory cortex areas, association area, top-down pathways, self-monitoring |
-| `bueai/training.py` | `Life` (the loop of experience, movement styles, rebirth) and `train()` | Living, and learning from surprise |
-| `bueai/newmap_test.py` | v0.2 tests: probes and dark room in never-seen maps | A neuroscientist recording from an animal in a new maze |
-| `bueai/emergence_test.py`, `bueai/darkroom_test.py` | v0.1 tests | Recording from the brain; a blindfold experiment |
-| `bueai/plots.py`, `bueai/plots_v02.py` | The figures | |
-| `run_v02.py` | Runs the v0.2 experiment | |
-| `tv_check.py` | Takes the noisy-TV result apart | |
-| `run_experiment.py` | Runs the v0.1 experiment | |
-| `tests/` | Unit tests (21) | |
+| `bueai/lively_world.py` | v0.3 world: balls, rollers, screens, physics | A world where things move, hide and react |
+| `bueai/model_v03.py` | v0.3 brain: vision region with its own short-term memory, core, optional episodic store | Retinotopic visual cortex, association area, hippocampus |
+| `bueai/commonsense_test.py` | The violation-of-expectation tests | A psychologist testing a baby |
+| `bueai/memory_test.py` | "What is where" probes in the v0.3 world | A neuroscientist recording in a new maze |
+| `bueai/checkpoints.py` | Save and load trained brains with their recipe | |
+| `bueai/training.py` | `Life` (the loop of experience) and `train()` | Living, and learning from surprise |
+| `bueai/model.py` | v0.1/v0.2 brain: regions, core, top-down feedback, curiosity heads | Sensory cortex areas, association area |
+| `bueai/world.py`, `bueai/many_worlds.py`, `bueai/senses.py` | v0.1 and v0.2 worlds and the sense organs | The outside world; eye, skin, ear |
+| `bueai/newmap_test.py`, `bueai/emergence_test.py`, `bueai/darkroom_test.py` | v0.2 and v0.1 tests | |
+| `bueai/plots*.py` | The figures | |
+| `run_v03.py`, `memory_check.py` | Run v0.3; check the external memory | |
+| `run_v02.py`, `tv_check.py`, `run_experiment.py` | Run v0.2 and v0.1 | |
+| `tests/` | Unit tests | |
 
-## The world
+## The world (v0.3)
 
-v0.2 generates a new 16x16 map for every life. One example:
+A new random 16x16 map for every life. One example ('@' is the agent):
 
 ```
-################        #  wall       grey,   feels rough,  silent
-#mT#.......#####        .  floor      dark
-#..#.........#m#        B  bell       red,    feels smooth, high pitch, loud,   solid
-#............#.#        F  fountain   blue,   feels wet,    mid pitch,  medium, solid
-#............#.#        m  moss       green,  feels soft,   low pitch,  quiet,  walkable
-#......##....#.#        T  noisy TV   random colour every moment, feels glassy, silent, solid
-#..........F...#
-#..............#
-#.m.######.....#
-#.......##.....#
-##....B.##.....#
+################        #  wall        grey,   feels rough
+#..#@......###.#        .  floor
+#S.............#        B  bell        red,    smooth, high pitch
+#.....r........#        F  fountain    blue,   wet,    mid pitch
+#........SSS...#        m  moss        green,  soft,   low pitch
+#..............#        S  screen      cream,  cloth.  Covered floor: balls and rollers
+#..............#                       pass underneath unseen. The agent cannot enter.
+#.....SS.......#        o  ball        yellow, hard.   Lifeless: moves only when pushed,
+#...######..o..#                       then rolls until something stops it.
+#.......##....m#        r  roller      magenta, furry. Moves by itself: straight lines,
+##......##B....#                       turns when blocked, rests, sets off again.
 ##......##.....#
-##.......#.....#
+##.......#..m.r#
 ##.............#
-##.............#
+##m...F....oS..#
 ################
 ```
 
-Every map has 1 bell, 1 fountain, 3 moss patches and 1 TV. Every map is fully
-connected, has no mirror or rotation symmetry, and no two walkable cells give
-identical sensations, so "where am I?" always has an answer. v0.1 used one
-fixed 12x12 map without the TV.
+The senses are as before: **vision** (a 5x5 patch of colours around the agent),
+**touch** (the texture under the agent and on its four sides) and **hearing**
+(loudness of three pitches, no direction). Balls and rollers are silent.
+Actions are stay / north / east / south / west, chosen by a random walk with
+some momentum. Walking into a ball pushes it.
 
-The senses:
-
-- **Vision**: a 5x5 patch of RGB colours centred on the agent (75 numbers).
-- **Touch**: the texture under the agent and on its four sides.
-- **Hearing**: loudness of each of the 3 pitches, fading with distance. No direction.
-
-Actions are stay / north / east / south / west.
-
-The **noisy TV** is there to test curiosity. Its colour is pure chance, so it
-can never be predicted. An agent that simply seeks out what it predicts badly
-could stare at it forever.
-
-## The brain
+## The brain (v0.3)
 
 ```
-               +-----------------------------------------+
-               |      top-down feedback (previous state) |
-               v                                         |
-vision  --> [vision region ] --+                         |
-touch   --> [touch region  ] --+--> [ recurrent core ] --+--> [predictors] --> next vision
-hearing --> [hearing region] --+        ^     |   |                        --> next touch
-                                        |     |   +-- + action ------------^   next hearing
-                          last action --+     |
-                                              +--> [curiosity heads]  (v0.2; read-only)
+                +----------------------------------------------+
+                |        top-down feedback (previous state)    |
+                v                                              |
+vision  --> [vision region:         ] --+                      |
+            [5x5 map with its own   ]   |                      |
+            [short-term memory      ] --|----------------------|--> [local predictor] --+
+touch   --> [touch region  ] -----------+--> [ recurrent core ]+--> [predictors] -------+--> next vision
+hearing --> [hearing region] -----------+      ^     ^    |                             --> next touch
+                                 last action --+     |    +--- + action ------------^   --> next hearing
+                                                     |    |
+                                       [episodic store]<--+   (optional: write a moment, look moments up)
 ```
 
 One moment of experience, as coded in `Life.live()`:
 
 1. **Sense.** Each sense organ reports its numbers.
-2. **Update the mind.** Each sensory region encodes its own sense, together with the core's previous state (the top-down feedback). The core, a GRU, combines the three encodings with its own memory and the last action taken.
-3. **Act.** A random move, possibly tilted by curiosity (v0.2).
-4. **Predict.** From the core state and the chosen action, one predictor per sense guesses the next sensation.
-5. **Compare.** The world moves; the squared difference between guess and reality is the prediction error.
+2. **Update the mind.** Each region encodes its sense together with top-down feedback from the core. The core combines them with its own memory and the last action.
+3. **Act.** A random move.
+4. **Predict.** From the mind state and the chosen action, guess the next sensation.
+5. **Compare.** The squared difference between guess and reality is the prediction error: the only learning signal, and in the tests the brain's "surprise meter".
 
-`train()` lowers that error by gradient descent. That is the entire learning
-signal. `world.ground_truth()` (true position and so on) is only ever read by
-the tests.
+### Design change in v0.3: sensory regions have a short memory of their own
 
-### What v0.2 adds
+The v0.2 brain could not learn how things move. Watching a roller cross open
+floor, it bet about 40% on "it stays where it is" and had no sense of
+direction, after 190,000 moments of life. Its vision region squeezed each
+image into 32 numbers and forgot it; only the core remembered anything.
 
-- **Many lives.** A life lasts 512 moments. Then the agent is reborn in a
-  brand-new map with a blank core state. The weights carry over; the contents
-  of the mind do not. Over training each brain passes through about 48,000
-  maps, so no single map can be memorised in the weights.
-- **A bigger core** (256 units) and four times as much experience (192,000
-  moments per agent).
-- **Curiosity heads.** Two small networks read the core and guess the brain's
-  own prediction error: on a first look, and on an immediate second look at the
-  same place. They cannot change the core or the predictors; they only watch.
-- **Three movement styles**, identical except for one multiplier on the random
-  walk:
-  - *random walk*, as in v0.1
-  - *learning progress*: prefer actions where the first-look error is expected
-    to be high and the second-look error low (surprising now, learnable soon)
-  - *plain error*: prefer actions where the first-look error is expected to be
-    high (the naive version that should fall for the TV)
+In v0.3 the vision region keeps its own 5x5 map of recent activity (one small
+vector per cell of the view), updated by the same small set of weights at
+every cell. A second, local predictor reads that map directly. "It was one
+cell to the left, so next it is one cell to the right" is then learned once
+and holds at all 25 cells.
 
-### What "position" means when every map is different
+This changes the thesis design, not just a setting. **Before, only the core
+had memory; now a sensory region has a short one too.** It resembles early
+visual cortex (laid out like the retina, sensitive to motion, holding a brief
+trace of what was just seen). It also builds in something the old brain was
+not given: the assumption that the same rules hold everywhere in the view.
+The full story of how the problem was found is in [RESULTS.md](RESULTS.md).
 
-Position is (x, y) inside the arena, whose outer wall is the same size in every
-map. It is knowable, but not at a glance: the agent has to find walls and keep
-count of its own steps. One linear probe is shared by all maps, fitted on one
-set of new maps and scored on a different set, so it cannot memorise a map.
+### The memory conditions
 
-A second probe asks **where the bell is**. That differs in every map, so the
-weights cannot know it. If the core holds it, the brain has stored a fact about
-this particular place.
+| Condition | What it is |
+|---|---|
+| **Core only** | The v0.3 brain as above, nothing added. |
+| **Remembering pays** | The same brain, raised with darkness half the time and lives twice as long in each map. |
+| **External memory** | The brain plus a hippocampus-like store: it files away what it sensed every 4 moments, and every moment asks the store "what did I sense when things were like this?" Only the asking is learned. |
+| **Both** | The store, in the world where remembering pays. |
 
-## v0.2 results in brief
+## The common-sense tests
 
-Full tables are in [RESULTS.md](RESULTS.md). Seeds 0, 1, 2.
+A baby cannot say what it expects, but it looks longer at things that surprise
+it. Our brain's surprise is its prediction error. Each test stages a short
+scene in versions that are possible and versions that are impossible, and
+compares the surprise. The versions are identical until the event; impossible
+ones break exactly one rule.
 
-### It finds its bearings in a place it has never seen
+| Principle | Possible | Impossible |
+|---|---|---|
+| **Object permanence** | a roller goes under a screen and comes out | it never comes out; or one comes out that never went in |
+| **Solidity** | a roller turns away at a wall | it goes through the wall |
+| **Causality** | a ball moves when pushed (by a roller, or by the agent itself) | it moves untouched; or does not move when pushed |
+| **Continuity** | a roller crosses the gap between two screens | it skips the gap; or jumps to a far cell in plain view |
 
-![new map learning](results/v0.2/new_map_learning.png)
+Each test reports two numbers: how **often** the impossible versions were the
+more surprising ones (50% is chance), and by how **much** (1.0x is no
+difference). Both are compared with the same network untrained and with a
+brain-free "expect no change" rule.
 
-On arrival the trained brain is as lost as the baselines. Within about 50
-moments its position error halves, and it settles near 1.2 cells. The same
-network untrained stays at 3.7 and the raw senses at 4.4, because neither can
-accumulate anything. None of the test maps appeared in training.
+## v0.3 results in brief
 
-It does **not** learn where the bell is (right panel): 5.10 cells against 5.37
-for chance.
+Full tables are in [RESULTS.md](RESULTS.md). 12 brains: 4 conditions x 3 seeds.
 
-### The position sense survives the dark
+![common-sense scores](results/v0.3/commonsense_scores.png)
 
-![dark room in a new place](results/v0.2/darkroom_new_place.png)
+**What appeared** (in every one of the 12 brains unless noted):
 
-After 300 moments of looking around, the brain keeps its position to 1.33
-cells through 100 dark moments. Agents that saw almost nothing first (dashed)
-still improve while blind, using touch and hearing alone. But having looked
-around makes dark *predictions* only 6 to 9% better, which again says the
-layout itself is not being stored.
+- **Solidity for rollers.** A roller going through a wall is 2.1 to 2.8 times as surprising. Untrained: no difference.
+- **Lifeless vs self-moving.** A ball setting off by itself is 1.8 to 1.9 times as surprising as a roller doing so.
+- **Continuity in plain view**, in 8 of 12 brains. The other 4 had not learned roller motion yet when training stopped.
+- **Short-gap permanence, weakly.** 1.2 to 2.0x after 5 dark moments; 1.1 to 1.2x after one moment under a screen.
+- **Half of "I can push things".** Surprised when a pushed ball does not budge, but still surprised when its own push works.
 
-### Curiosity explores faster, and nobody got stuck at the TV
+**What did not appear:**
 
-![movement styles](results/v0.2/movement_styles.png)
+- **Anything about hidden things.** Three moments under a screen, 30 dark moments: no effect.
+- **The two-screens test came out backwards in all 12 brains.** The brain is 8 times MORE surprised when the roller comes out into the gap than when it skips it. In its predictions, whatever goes under a screen is gone. What it has learned about screens is "things vanish here": true of what it sees, false of the world.
+- **Ball physics.** It expects a rolling ball to stop. Balls roll in under 1% of moments.
 
-Both curious styles see more of the map and get their bearings sooner. The
-planned demonstration, plain-error curiosity stuck at the TV while learning
-progress walks away, **did not happen**: neither style gets stuck.
-`tv_check.py` shows the learning-progress signal does ignore the TV noise that
-the plain-error signal reacts to, but the agent never stays at the TV, mainly
-because the rest of the map never becomes boring to a brain that does not
-remember it.
+### Memory did not help, and a lead that was only a head start
 
-### Top-down feedback: still not shown
+No memory condition beat the plain brain on any test. The differences between
+seeds inside one condition are bigger than the differences between conditions.
 
-![feedback](results/v0.2/feedback.png)
+![growing up](results/v0.3/growing_up.png)
 
-A small edge late in life, in 2 of 3 seeds. Not enough to claim.
+An early one-seed pilot seemed to show the external store well ahead. It
+turned out those brains had simply learned roller motion earlier in training.
+Once the plain brain's visual memory was restored to its validated size, it
+caught up and the lead was gone. When motion "clicks" varies from seed to seed
+by more than any condition changes it, so a one-seed comparison at one moment
+in training would have reported a memory effect that was a head start.
+
+The store is used: emptying it at test time makes vision predictions 5 to 13%
+worse and hearing predictions 15 to 44% worse (`memory_check.py`). It seems to
+supply a sense of "what this place is like". It does not supply "that roller
+is still under there".
+
+## Saved brains
+
+Every trained brain is saved with the recipe to rebuild it
+(details: [results/CHECKPOINTS.md](results/CHECKPOINTS.md)):
+
+```python
+from bueai.checkpoints import load_brain
+brain, info = load_brain("results/v0.3/checkpoints/core_seed0.pt")
+print(info["nickname"], "-", info["note"])
+```
+
+The twelve v0.3 brains, each trained for 3,000 updates (96,000 moments per agent):
+
+| Nickname | Condition | Seed | File in `results/v0.3/checkpoints/` |
+|---|---|---|---|
+| Sachiel | Core only | 0 | `core_seed0.pt` |
+| Shamshel | Core only | 1 | `core_seed1.pt` |
+| Ramiel | Core only | 2 | `core_seed2.pt` |
+| Gaghiel | Remembering pays | 0 | `pays_seed0.pt` |
+| Israfel | Remembering pays | 1 | `pays_seed1.pt` |
+| Sandalphon | Remembering pays | 2 | `pays_seed2.pt` |
+| Matarael | External memory | 0 | `memory_seed0.pt` |
+| Sahaquiel | External memory | 1 | `memory_seed1.pt` |
+| Iruel | External memory | 2 | `memory_seed2.pt` |
+| Leliel | Both | 0 | `both_seed0.pt` |
+| Bardiel | Both | 1 | `both_seed1.pt` |
+| Zeruel | Both | 2 | `both_seed2.pt` |
+
+Also saved: seven pilot brains in `results/v0.3/checkpoints/pilot/` (including
+`watcher.pt`, the positive control that showed the tests can be passed) and
+the twelve v0.2 brains in `results/v0.2/checkpoints/`.
 
 ## What these results do not show
 
-- **It locates itself; it does not store the place.** The thesis needs both.
-- **The agent is told when the place changes**, by the blank core state at each
-  new life.
-- **Finding position may be a learned routine** (find walls, count steps) held
-  in the weights. What is built within a life is the estimate.
-- **The noisy-TV comparison is untested**, not passed: this world had no trap
-  to fall into.
-- **Three seeds.** Enough for the big effects, not for the small ones.
+- **Training was cut short.** Every brain was still improving at 3,000 updates.
+- **Three seeds, and seeds matter a lot here.** Enough for what all 12 brains share; not enough to rank the memory conditions.
+- **The new vision region builds in an assumption** (the same rules everywhere in the view) that the motion results depend on.
+- **Some tests can be partly passed by the raw amount of change on screen**; RESULTS.md marks which.
+- **A toy world.** One object is one cell. Nothing here is comparable with benchmark numbers from 3D video (PLATO, IntPhys, V-JEPA). What is different about this project is that the agent acts, has several senses, and that memory is the thing being varied.
 
-## Plan for v0.3
+## Options for v0.4
 
-1. **Continuous life with unannounced moves.** One unbroken life. At
-   unpredictable moments the agent is placed in a different map, with no reset
-   and no signal. It has to notice from its own prediction errors that the
-   place has changed, drop its old estimate and rebuild. Measure how long
-   noticing and recovering take.
-2. **Get "what is where" to emerge**: make remembering pay (3x3 view, longer
-   blackouts, more return visits), and give the core a memory it can write to
-   and look things up in.
-3. **A fair noisy-TV test** once 2 works: a bigger TV, longer lives, curiosity
-   that looks several steps ahead.
-4. **Give feedback a job**: ambiguous senses, more seeds.
+Every brain was still improving, so the cheapest next step is more training,
+and the saved brains can simply carry on.
 
-Details and reasons are at the end of the v0.2 entry in
-[RESULTS.md](RESULTS.md).
+| Plan | Time on 4 cores |
+|---|---|
+| Continue all 12 saved brains by 3,000 updates (to 6,000) | about 1 h 40 min |
+| Start 12 fresh brains and train to 6,000 | about 3 h 20 min |
+| Continue all 12 by 6,000 updates (to 9,000) | about 3 h 20 min |
+| Start 12 fresh brains and train to 9,000 | about 5 h |
+
+Continuing saves the time already spent. It is not identical to one long run
+(the optimiser's running averages and the lives in progress start afresh), and
+it only works while the brain's shape and the senses stay the same. Changing
+the world is fine; changing the brain means a fresh start or new parts
+starting untrained.
+
+Beyond more training: give the brain a way to keep a hidden thing "alive"
+(the two-screens result says this is the real gap), make balls roll more
+often, and use more seeds for anything that compares conditions. Details are
+at the end of the v0.3 entry in [RESULTS.md](RESULTS.md).
 
 ## Moving to 3D later
 
-The brain never mentions "grid", "vision" or any specific sense. It is built
-from `world.sense_shapes`, a dictionary of names and shapes, and loops over
-whatever is in it. To move to MiniWorld or MuJoCo:
+The brains never mention "grid". They are built from `world.sense_shapes`, a
+dictionary of names and shapes. To move to MiniWorld or MuJoCo:
 
-1. **Write a new world class** with the same members as `GridWorld`:
+1. **Write a new world class** with the same members as `LivelyWorld`:
    `sense_shapes`, `n_actions`, `reset(n_agents, seed)`, `step(actions)`,
-   `ground_truth()`. `reset` and `step` return a dict of NumPy arrays with one
-   row per agent. For many-worlds training also provide `new_life(agents)`,
-   which gives those agents a new place and returns their first sensations
-   (see `ManyWorlds`).
-2. **Swap the vision region** for a deeper CNN. Any module with
-   `forward(image, core_state)` returning `(batch, latent_size)` and a
-   `latent_size` attribute works:
+   `new_life(agents)`, `ground_truth()`.
+2. **Replace the vision region** with a deeper one. In the v0.1/v0.2 brain any
+   module with `forward(image, core_state)` works. The v0.3 visual memory is a
+   5x5 map; for camera images it would become a stack of convolutional layers
+   ending in a coarser map of the same kind.
 
-   ```python
-   brain = Brain(world.sense_shapes, world.n_actions,
-                 regions={"vision": MyBiggerCNN(...)})
-   ```
-
-`Life` and `train()` then run unchanged. The v0.2 tests build a `ManyWorlds`
-themselves and read its ground truth (position, bell, share of map seen), so
-they need a small edit to take the new world instead. `tests/test_sanity.py`
-has a test that builds a brain with a 9x9 image and a made-up "smell" sense to
-confirm no brain code needs to change.
-
-Two things will need real work in 3D: continuous actions (the predictors take
-a one-hot action today), and predicting raw pixels with squared error, which
-gets blurry. Predicting in the region's latent space is the usual fix.
+`Life` and `train()` then run unchanged. Two things will need real work in 3D:
+continuous actions, and predicting raw pixels with squared error, which gets
+blurry (predicting in a learned representation is the usual fix).

@@ -1,7 +1,7 @@
 """
 tv_check.py -- v0.2 follow-up: a closer look at the noisy TV.
 
-    python tv_check.py            # needs the saved brains from a finished run_v02.py
+    python tv_check.py            # uses the saved brains in results/v0.2/checkpoints/
 
 The main run (Test 4) showed that NEITHER kind of curiosity got stuck at the
 TV. This script asks why, by looking at three things separately:
@@ -10,7 +10,7 @@ TV. This script asks why, by looking at three things separately:
     2. Do the self-monitoring heads know that?     (the curiosity scores)
     3. Does the agent act on it?                   (the behaviour)
 
-It loads the finished brains from results/v0.2/weights/, lets each one live
+It loads the finished brains from results/v0.2/checkpoints/, lets each one live
 400 moments in new maps moving in its own style, and prints one table.
 Nothing is trained here. Output is also saved to results/v0.2/tv_check.txt.
 """
@@ -20,11 +20,9 @@ import os
 import numpy as np
 import torch
 
-from bueai.many_worlds import ManyWorlds
-from bueai.model import Brain
+from bueai import checkpoints
 from bueai.newmap_test import explore
 from bueai.training import ERROR_SCALE, STAY
-from run_v02 import BRAIN_SIZE
 
 OUT = "results/v0.2"
 SEEDS = [0, 1, 2]
@@ -33,10 +31,8 @@ MAP_SEED = 30_000                              # different from training and fro
 
 
 def load_brain(style, seed):
-    world = ManyWorlds()
-    brain = Brain(world.sense_shapes, world.n_actions, **BRAIN_SIZE)
-    brain.load_state_dict(torch.load(os.path.join(OUT, "weights", f"{style}_seed{seed}.pt")))
-    return brain.eval()
+    brain, _ = checkpoints.load_brain(os.path.join(OUT, "checkpoints", f"{style}_seed{seed}.pt"))
+    return brain
 
 
 @torch.no_grad()

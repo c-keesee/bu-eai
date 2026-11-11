@@ -4,3 +4,5 @@ __pycache__/
 .venv/
 results/*/weights/
 results/v0.2_quick/
+results/v0.3_quick/
+results/v0.3_pilot*/
