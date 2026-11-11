@@ -49,45 +49,56 @@ def _save(fig, title, path, top=0.93):
 
 
 def plot_scores(runs, path):
-    """The headline figure: pass rate on every test, every kind of brain, with baselines."""
+    """The headline figure. Left: how OFTEN the impossible versions were the more
+    surprising ones. Right: by HOW MUCH. A brain has a piece of common sense only
+    if it is to the right of the dashed line in BOTH panels."""
     first = next(iter(runs.values()))
     tests = list(first[0]["tests"])
     rows = np.arange(len(tests))[::-1]                    # first test at the top
-    fig, ax = plt.subplots(figsize=(10.5, 0.52 * len(tests) + 2.2))
+    fig, (left, right) = plt.subplots(1, 2, figsize=(15, 0.56 * len(tests) + 2.4), sharey=True,
+                                      gridspec_kw={"width_ratios": [1, 1]})
+    n = len(runs) + 2
+    offsets = np.linspace(0.32, -0.32, n)
+    low, high = 0.08, 12.0                                # range of the "how much" axis
 
-    def dots(values_per_test, color, label, offset, marker="o", filled=True):
-        values = 100 * np.array(values_per_test, dtype=float)             # (tests, seeds)
-        face = color if filled else "none"
+    def dots(ax, values_per_test, color, label, offset, marker="o", filled=True):
+        values = np.array(values_per_test, dtype=float)                   # (tests, seeds)
         if values.shape[1] > 1:
             for column in values.T:
                 ax.scatter(column, rows + offset, s=12, color=color, alpha=0.35, linewidths=0)
-        ax.scatter(values.mean(axis=1), rows + offset, s=70, marker=marker, facecolors=face,
+        ax.scatter(values.mean(axis=1), rows + offset, s=64, marker=marker, facecolors=color if filled else "none",
                    edgecolors=color, linewidths=1.6, label=label, zorder=3)
 
-    n = len(runs) + 2
-    offsets = np.linspace(0.3, -0.3, n)
-    for (condition, rs), offset in zip(runs.items(), offsets):
-        dots([[r["tests"][t]["trained"]["pass_rate"] for r in rs] for t in tests],
-             CONDITION_COLORS.get(condition, DARK_GREY), CONDITION_NAMES.get(condition, condition), offset)
-    dots([[r["tests"][t]["untrained"]["pass_rate"] for r in first] for t in tests],
-         ORANGE, "untrained", offsets[-2])
-    dots([[r["tests"][t]["no change"]["pass_rate"] for r in first] for t in tests],
-         GREY, "expect no change", offsets[-1], marker="D", filled=False)
+    sources = [(rs, "trained", CONDITION_COLORS.get(c, DARK_GREY), CONDITION_NAMES.get(c, c), "o", True)
+               for c, rs in runs.items()]
+    sources += [(first, "untrained", ORANGE, "untrained", "o", True),
+                (first, "no change", GREY, "expect no change", "D", False)]
+    for (rs, who, color, label, marker, filled), offset in zip(sources, offsets):
+        dots(left, [[100 * r["tests"][t][who]["pass_rate"] for r in rs] for t in tests], color, label, offset, marker, filled)
+        dots(right, [[np.clip(r["tests"][t][who]["ratio"], low * 1.15, high / 1.15) for r in rs] for t in tests],
+             color, label, offset, marker, filled)
 
-    ax.axvline(50, color=GREY, linestyle=(0, (4, 3)), linewidth=1.2)
-    ax.text(51, -0.55, "chance", ha="left", va="bottom", fontsize=8.5, color=INK_SOFT)
-    for boundary in rows[:-1] - 0.5:
-        ax.axhline(boundary, color="#e4e3df", linewidth=0.8)
-    ax.set_yticks(rows, [TEST_NAMES.get(t, t) for t in tests])
-    ax.set_ylim(-0.6, len(tests) - 0.2)
-    ax.set_xlim(-3, 103)
-    ax.set_xticks(range(0, 101, 25), [f"{v}%" for v in range(0, 101, 25)])
-    ax.set_xlabel("share of scenes where the impossible versions were more surprising")
-    ax.grid(axis="y", visible=False)
-    ax.legend(loc="lower left", bbox_to_anchor=(-0.02, 1.0), ncol=min(n, 5), handletextpad=0.3,
-              columnspacing=1.4, borderaxespad=0)
-    _save(fig, f"Common-sense tests: is the impossible more surprising?   ({_seeds_text(first)})", path,
-          top=0.95)
+    for ax, reference, note in ((left, 50, "chance"), (right, 1.0, "no difference")):
+        ax.axvline(reference, color=GREY, linestyle=(0, (4, 3)), linewidth=1.2)
+        ax.annotate(note, (reference, -0.55), xytext=(4, 0), textcoords="offset points", ha="left", va="bottom",
+                    fontsize=8.5, color=INK_SOFT)
+        for boundary in rows[:-1] - 0.5:
+            ax.axhline(boundary, color="#e4e3df", linewidth=0.8)
+        ax.grid(axis="y", visible=False)
+        ax.set_ylim(-0.6, len(tests) - 0.4)
+    left.set_yticks(rows, [TEST_NAMES.get(t, t) for t in tests])
+    left.set_xlim(-3, 103)
+    left.set_xticks(range(0, 101, 25), [f"{v}%" for v in range(0, 101, 25)])
+    left.set_xlabel("how OFTEN: share of scenes where the impossible versions were more surprising")
+    right.set_xscale("log")
+    right.set_xlim(low, high)
+    ticks = [0.1, 0.25, 0.5, 1, 2, 4, 10]
+    right.set_xticks(ticks, [f"{t:g}x" for t in ticks])
+    right.minorticks_off()
+    right.set_xlabel("how MUCH: surprise at the impossible versions / surprise at the possible ones")
+    left.legend(loc="lower left", bbox_to_anchor=(-0.02, 1.0), ncol=n, handletextpad=0.3, columnspacing=1.4,
+                borderaxespad=0)
+    _save(fig, f"Common-sense tests: is the impossible more surprising?   ({_seeds_text(first)})", path, top=0.95)
 
 
 def plot_traces(runs, path, condition=None):
@@ -111,11 +122,12 @@ def plot_traces(runs, path, condition=None):
             possible = info["possible"][v]
             ax.plot(observations[show] - first, course[v][show], color=DARK_GREY if possible else VIOLET,
                     linestyle=styles[used[possible]], linewidth=2 if not possible else 1.6,
+                    marker="o", markersize=4 if show.sum() > 1 else 8,
                     label=("possible: " if possible else "IMPOSSIBLE: ") + label)
             used[possible] += 1
         ax.axvspan(-0.5, last - first + 0.5, color=GREY, alpha=0.12, linewidth=0)
         ax.set_title(TEST_NAMES.get(t, t))
-        ax.set_xlabel("moments from the start of the event")
+        ax.set_xlabel("moments from the start of the event" if show.sum() > 1 else "the moment the lights come back on")
         ax.set_ylabel("surprise (prediction error x 1000)")
         ax.set_ylim(0, None)
         ax.xaxis.get_major_locator().set_params(integer=True)
@@ -127,33 +139,38 @@ def plot_traces(runs, path, condition=None):
 
 
 def plot_growing_up(runs, path):
-    """Pass rate on each test against how long the brain has lived."""
+    """How much more surprising the impossible is, against how long the brain has lived."""
     first = next(iter(runs.values()))
     tests = list(first[0]["tests"])
-    fig, axes = plt.subplots(3, 4, figsize=(16, 11))
+    fig, axes = plt.subplots(3, 4, figsize=(16, 10.5))
     for ax in axes.flatten()[len(tests):]:
         ax.set_visible(False)
+    low, high = 0.08, 12.0
     for ax, t in zip(axes.flatten(), tests):
         for condition, rs in runs.items():
             color = CONDITION_COLORS.get(condition, DARK_GREY)
             x = np.array([p["update"] for p in rs[0]["growing"]]) * rs[0]["chunk_len"] / 1000
-            rows = 100 * np.array([[p["pass_rate"][t] for p in r["growing"]] for r in rs])
+            rows = np.clip(np.array([[p["ratio"][t] for p in r["growing"]] for r in rs]), low * 1.1, high / 1.1)
             if len(rows) > 1:
                 for row in rows:
                     ax.plot(x, row, color=color, linewidth=0.8, alpha=0.3)
-            ax.plot(x, rows.mean(axis=0), color=color, linewidth=2, label=CONDITION_NAMES.get(condition, condition))
-        ax.axhline(50, color=GREY, linestyle=(0, (4, 3)), linewidth=1.2)
-        ax.set_ylim(-3, 103)
-        ax.set_yticks(range(0, 101, 25), [f"{v}%" for v in range(0, 101, 25)])
-        ax.set_title(TEST_NAMES.get(t, t), pad=24)
+            ax.plot(x, np.exp(np.log(rows).mean(axis=0)), color=color, linewidth=2,
+                    label=CONDITION_NAMES.get(condition, condition))
+        ax.axhline(1.0, color=GREY, linestyle=(0, (4, 3)), linewidth=1.2)
+        ax.set_yscale("log")
+        ax.set_ylim(low, high)
+        ax.set_yticks([0.1, 0.5, 1, 2, 10], ["0.1x", "0.5x", "1x", "2x", "10x"])
+        ax.minorticks_off()
+        ax.set_title(TEST_NAMES.get(t, t))
         ax.set_xlabel("moments of life lived (thousands, per agent)")
-        ax.set_ylabel("scenes passed")
-        ax.legend(loc="lower left", bbox_to_anchor=(-0.02, 0.99), ncol=3, handlelength=1.6,
-                  columnspacing=1.2, borderaxespad=0, fontsize=8.5)
+        ax.set_ylabel("impossible / possible surprise")
+    handles, labels = axes.flatten()[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper left", bbox_to_anchor=(0.01, 0.955), ncol=len(labels), handlelength=1.6,
+               columnspacing=1.6)
     n = len(first)
     _save(fig, f"Growing up: when does each piece of common sense appear?   "
-               f"({'mean of ' + str(n) + ' seeds; faint lines = single seeds' if n > 1 else '1 seed'}; dashed = chance)",
-          path, top=0.94)
+               f"({'mean of ' + str(n) + ' seeds; faint lines = single seeds' if n > 1 else '1 seed'}; "
+               f"dashed = no difference)", path, top=0.92)
 
 
 def make_all(runs, out_dir):
