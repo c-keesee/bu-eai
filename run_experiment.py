@@ -13,7 +13,7 @@ For every random seed it:
     4. freezes it and runs the emergence test (linear probes) under each
        sensing condition, and the dark-room test
 Then it prints the results for all seeds side by side and saves three plots
-plus the raw numbers into results/.
+plus the raw numbers into results/v0.1/.
 
 Why several seeds? A seed fixes every random choice (initial weights, where
 the agents start, how they wander). One run could look good or bad by luck.
@@ -156,7 +156,7 @@ def main():
                         help="seeds to run at the same time (default: one per CPU core)")
     parser.add_argument("--no-feedback", action="store_true",
                         help="ablation: cut the top-down connections (core -> sensory regions)")
-    parser.add_argument("--out", default="results")
+    parser.add_argument("--out", default="results/v0.1")
     args = parser.parse_args()
     if args.quick:
         args.seeds, args.updates = [0], 150
