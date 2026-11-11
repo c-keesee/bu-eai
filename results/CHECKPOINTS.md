@@ -14,6 +14,30 @@ print(info["note"])
 | `results/v0.3/checkpoints/pilot/` | Brains from the v0.3 pilots (one seed each, see below) |
 | `results/v0.2/checkpoints/` | The twelve v0.2 brains: `{random, progress, error, no_feedback}_seed{0,1,2}.pt` |
 
+## v0.3 final brains
+
+Each trained for 3,000 updates (96,000 moments per agent) in the lively world.
+The nickname is also stored inside each file (`info["nickname"]`).
+
+| Nickname | Condition | Seed | File |
+|---|---|---|---|
+| Sachiel | Core only | 0 | `results/v0.3/checkpoints/core_seed0.pt` |
+| Shamshel | Core only | 1 | `results/v0.3/checkpoints/core_seed1.pt` |
+| Ramiel | Core only | 2 | `results/v0.3/checkpoints/core_seed2.pt` |
+| Gaghiel | Remembering pays | 0 | `results/v0.3/checkpoints/pays_seed0.pt` |
+| Israfel | Remembering pays | 1 | `results/v0.3/checkpoints/pays_seed1.pt` |
+| Sandalphon | Remembering pays | 2 | `results/v0.3/checkpoints/pays_seed2.pt` |
+| Matarael | External memory | 0 | `results/v0.3/checkpoints/memory_seed0.pt` |
+| Sahaquiel | External memory | 1 | `results/v0.3/checkpoints/memory_seed1.pt` |
+| Iruel | External memory | 2 | `results/v0.3/checkpoints/memory_seed2.pt` |
+| Leliel | Both | 0 | `results/v0.3/checkpoints/both_seed0.pt` |
+| Bardiel | Both | 1 | `results/v0.3/checkpoints/both_seed1.pt` |
+| Zeruel | Both | 2 | `results/v0.3/checkpoints/both_seed2.pt` |
+
+A checkpoint holds the weights and the recipe, not the optimiser state or the
+lives in progress. Training can be continued from one, but it will not be
+bit-identical to a single longer run.
+
 v0.1 brains were never saved; `python run_experiment.py` retrains them in 2.5 minutes.
 
 Folders named `weights/` are scratch space for training in progress (so an

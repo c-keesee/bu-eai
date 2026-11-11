@@ -1,0 +1,26 @@
+EPISODIC STORE CHECK: prediction error x 1000 with the store working / emptied every moment (and how much worse without it)
+
+memory seed 0 (Matarael)   learned matching sharpness 11.4
+   vision   moments 20-100: 5.471 / 5.699 (+4%)    moments 300-400: 5.144 / 5.415 (+5%)
+   touch    moments 20-100: 3.029 / 3.215 (+6%)    moments 300-400: 2.934 / 3.112 (+6%)
+   hearing  moments 20-100: 0.230 / 0.285 (+24%)    moments 300-400: 0.222 / 0.275 (+24%)
+memory seed 1 (Sahaquiel)   learned matching sharpness 16.9
+   vision   moments 20-100: 5.155 / 5.552 (+8%)    moments 300-400: 4.880 / 5.515 (+13%)
+   touch    moments 20-100: 3.043 / 3.180 (+4%)    moments 300-400: 3.131 / 3.262 (+4%)
+   hearing  moments 20-100: 0.233 / 0.316 (+36%)    moments 300-400: 0.230 / 0.331 (+44%)
+memory seed 2 (Iruel)   learned matching sharpness 7.9
+   vision   moments 20-100: 5.757 / 6.104 (+6%)    moments 300-400: 5.614 / 6.166 (+10%)
+   touch    moments 20-100: 3.527 / 3.712 (+5%)    moments 300-400: 3.488 / 3.682 (+6%)
+   hearing  moments 20-100: 0.265 / 0.293 (+11%)    moments 300-400: 0.278 / 0.320 (+15%)
+both seed 0 (Leliel)   learned matching sharpness 11.0
+   vision   moments 20-100: 5.677 / 5.782 (+2%)    moments 300-400: 5.281 / 5.432 (+3%)
+   touch    moments 20-100: 3.615 / 3.664 (+1%)    moments 300-400: 3.491 / 3.549 (+2%)
+   hearing  moments 20-100: 0.258 / 0.271 (+5%)    moments 300-400: 0.238 / 0.251 (+5%)
+both seed 1 (Bardiel)   learned matching sharpness 7.7
+   vision   moments 20-100: 5.367 / 5.501 (+3%)    moments 300-400: 5.002 / 5.228 (+5%)
+   touch    moments 20-100: 3.766 / 3.810 (+1%)    moments 300-400: 3.806 / 3.859 (+1%)
+   hearing  moments 20-100: 0.265 / 0.285 (+8%)    moments 300-400: 0.268 / 0.288 (+7%)
+both seed 2 (Zeruel)   learned matching sharpness 7.8
+   vision   moments 20-100: 5.860 / 5.905 (+1%)    moments 300-400: 5.656 / 5.749 (+2%)
+   touch    moments 20-100: 4.274 / 4.384 (+3%)    moments 300-400: 4.264 / 4.380 (+3%)
+   hearing  moments 20-100: 0.288 / 0.312 (+8%)    moments 300-400: 0.317 / 0.341 (+8%)
