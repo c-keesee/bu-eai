@@ -185,6 +185,7 @@ def plot_training(runs, path):
         ax.set_yscale("log")
         ax.set_title(sense, pad=40)
         ax.set_xlabel("moments of life lived (per agent)")
+        ax.xaxis.set_major_formatter(lambda value, _: f"{value / 1000:.0f}k")   # 50000 -> "50k"
         ax.set_ylabel("prediction error (log scale)")
         ax.legend(loc="lower left", bbox_to_anchor=(-0.02, 0.99), ncol=2, handlelength=1.6,
                   columnspacing=1.2, borderaxespad=0)

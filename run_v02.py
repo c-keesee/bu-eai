@@ -1,7 +1,7 @@
 """
 run_v02.py -- the v0.2 experiment: can the brain map a NEW place within one life?
 
-    python run_v02.py                     # everything: 4 conditions x 3 seeds (about 2 hours on 4 cores)
+    python run_v02.py                     # everything: 4 conditions x 3 seeds (about 90 minutes on 4 cores)
     python run_v02.py --quick             # a 2-minute smoke test (numbers mean nothing)
     python run_v02.py --resume            # carry on after an interruption
     python run_v02.py --report-only       # just re-print the report and redraw the plots
