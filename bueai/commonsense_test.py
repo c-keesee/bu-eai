@@ -87,6 +87,7 @@ class Version:
     dark: tuple = None                             # (first, last) observation numbers with vision off
     stuck: bool = False                            # magic: the ball cannot be pushed
     ghost_walls: list = field(default_factory=list)   # magic: (dx, dy) walls that movers pass through
+    invisible_walls: list = field(default_factory=list)   # magic: (dx, dy) floor that blocks movers like a wall
     weight: int = None                             # default: -1 if possible, +1 if impossible
 
     def __post_init__(self):
@@ -153,13 +154,32 @@ def permanence_dark(dark_moments):
         window=(last + 1, last + 1))
 
 
-def solidity():
-    """A ball rolls at a wall. It should stop; it should not go through."""
+def solidity_roller():
+    """A roller rolls at a wall. It should turn away; it should not go through.
+    (Rollers are the movers the brain has seen most. The second impossible
+    version has the roller turn away from thin air, exactly as it would from
+    a wall: the same motion as a possible version, minus its cause.)"""
+    wall = [(0, -1, WALL)]
+    roller = [(ROLLER, -3, -1)]
+    go = [_launch(ROLLER)]
+    return Test(
+        "solidity_roller", "solidity", "roller rolls towards a wall (or towards nothing)",
+        [Version("wall: roller turns away", True, wall, roller, events=go),
+         Version("wall: roller goes through", False, wall, roller, events=go, ghost_walls=[(0, -1)]),
+         Version("no wall: roller keeps rolling", True, [], roller, events=go),
+         Version("no wall: roller turns away from nothing", False, [], roller, events=go,
+                 invisible_walls=[(0, -1)])],
+        window=(at(0), at(1)))
+
+
+def solidity_ball():
+    """A ball rolls at a wall. It should stop; it should not go through.
+    (A RARE-EVENT test: balls roll in under 1% of the moments of a life.)"""
     wall = [(0, -1, WALL)]
     ball = [(BALL, -3, -1)]
     go = [_launch(BALL)]
     return Test(
-        "solidity", "solidity", "ball rolls towards a wall (or towards nothing)",
+        "solidity_ball", "solidity", "ball rolls towards a wall (or towards nothing)",
         [Version("wall: ball stops", True, wall, ball, events=go),
          Version("wall: ball goes through", False, wall, ball, events=go, ghost_walls=[(0, -1)]),
          Version("no wall: ball keeps rolling", True, [], ball, events=go),
@@ -234,7 +254,7 @@ def continuity_screens():
 
 def all_tests():
     return [permanence_screen(1), permanence_screen(3), permanence_dark(5), permanence_dark(30),
-            solidity(), causality_watch(), causality_act(), self_starting(),
+            solidity_roller(), solidity_ball(), causality_watch(), causality_act(), self_starting(),
             continuity_jump(), continuity_screens()]
 
 
@@ -290,9 +310,10 @@ class Stage:
                 world.alive[agents, self.slot[kind]] = True
                 world.obj_pos[agents, self.slot[kind]] = self.cells(dx, dy)
             world.stuck[agents, self.slot[BALL]] = version.stuck
-            for dx, dy in version.ghost_walls:
-                cell = self.cells(dx, dy)
-                world.blocks_objects[agents, cell[:, 0], cell[:, 1]] = False
+            for cells_list, blocks in ((version.ghost_walls, False), (version.invisible_walls, True)):
+                for dx, dy in cells_list:
+                    cell = self.cells(dx, dy)
+                    world.blocks_objects[agents, cell[:, 0], cell[:, 1]] = blocks
 
     # Turning a scene: (dx, dy) as written -> the real offset in each scene's map.
     def _turned(self, dx, dy):

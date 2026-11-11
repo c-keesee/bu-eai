@@ -82,29 +82,31 @@ class EpisodicStore:
         self.keys = torch.zeros(n_agents, slots, key_size)
         self.values = torch.zeros(n_agents, slots, value_size)
         self.used = torch.zeros(n_agents, slots, dtype=torch.bool)
-        self.clock = torch.zeros(n_agents, dtype=torch.long)      # moments lived in this life
-        self.write_every = write_every
+        self.written = torch.zeros(n_agents, dtype=torch.long)    # memories filed so far in this life
+        self.moment, self.write_every = 0, write_every
 
     def tick(self, keys, values):
-        """One moment passes. Agents whose turn it is file this moment away
-        (once the store is full, the oldest memory is overwritten)."""
-        rows = torch.nonzero(self.clock % self.write_every == 0).flatten()
-        if len(rows):
-            slot = (self.clock[rows] // self.write_every) % self.keys.shape[1]
+        """One moment passes. Every `write_every` moments, each agent files
+        the current moment away (once its store is full, the oldest memory is
+        overwritten)."""
+        if self.moment % self.write_every == 0:
+            rows = torch.arange(len(self.written))
+            slot = self.written % self.keys.shape[1]
             # clone() first: PyTorch still needs the OLD contents to work out
             # the gradients of lookups made earlier in this stretch of life.
             self.keys, self.values, self.used = self.keys.clone(), self.values.clone(), self.used.clone()
-            self.keys[rows, slot] = keys[rows].detach()
-            self.values[rows, slot] = values[rows].detach()
+            self.keys[rows, slot] = keys.detach()
+            self.values[rows, slot] = values.detach()
             self.used[rows, slot] = True
-        self.clock = self.clock + 1
+            self.written = self.written + 1
+        self.moment += 1
 
     def forget(self, agents):
         """A new life begins for these agents: their store is emptied."""
         agents = torch.as_tensor(agents, dtype=torch.long)
-        self.used, self.clock = self.used.clone(), self.clock.clone()
+        self.used, self.written = self.used.clone(), self.written.clone()
         self.used[agents] = False
-        self.clock[agents] = 0
+        self.written[agents] = 0
 
 
 class BrainV3(nn.Module):
@@ -221,10 +223,11 @@ class BrainV3(nn.Module):
         n = core.shape[0]
         questions = F.normalize(self.query(core).reshape(n, self.heads, self.key_size), dim=2)
         # How well each stored address matches each question (a dot product per pair).
-        match = torch.einsum("nhk,nmk->nhm", questions, memory.keys) * self.sharpness.exp()
+        # matmul on (n, heads, k) x (n, k, slots) does this for all agents at once.
+        match = torch.matmul(questions, memory.keys.transpose(1, 2)) * self.sharpness.exp()      # (n, heads, slots)
         match = match.masked_fill(~memory.used[:, None, :], -1e9)             # empty slots never match
         weights = torch.softmax(match, dim=2) * memory.used[:, None, :]       # (all zero if nothing is stored yet)
-        recalled = torch.einsum("nhm,nmv->nhv", weights, memory.values)       # a blend of the best matches
+        recalled = torch.matmul(weights, memory.values)                       # a blend of the best matches
         return torch.relu(self.recall_out(recalled.flatten(1)))
 
     def predict(self, state, action):

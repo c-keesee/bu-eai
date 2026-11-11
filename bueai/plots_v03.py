@@ -26,7 +26,8 @@ TEST_NAMES = {
     "permanence_screen_3": "Permanence: under a screen, 3 moments",
     "permanence_dark_5": "Permanence: lights out, 5 moments",
     "permanence_dark_30": "Permanence: lights out, 30 moments",
-    "solidity": "Solidity: ball meets wall",
+    "solidity_roller": "Solidity: roller meets wall",
+    "solidity_ball": "Solidity: ball meets wall (rare event)",
     "causality_watch": "Causality: watching a collision",
     "causality_act": "Causality: pushing it myself",
     "self_starting": "Causality: ball vs roller setting off",
@@ -94,7 +95,9 @@ def plot_traces(runs, path, condition=None):
     condition = condition or next(iter(runs))
     rs = runs[condition]
     tests = list(rs[0]["tests"])
-    fig, axes = plt.subplots(2, 5, figsize=(19, 9.6))
+    fig, axes = plt.subplots(3, 4, figsize=(16, 14))
+    for ax in axes.flatten()[len(tests):]:
+        ax.set_visible(False)
     styles = ["-", (0, (4, 2)), (0, (1, 1.5))]
     for ax, t in zip(axes.flatten(), tests):
         info = rs[0]["tests"][t]
@@ -127,7 +130,9 @@ def plot_growing_up(runs, path):
     """Pass rate on each test against how long the brain has lived."""
     first = next(iter(runs.values()))
     tests = list(first[0]["tests"])
-    fig, axes = plt.subplots(2, 5, figsize=(19, 7.4))
+    fig, axes = plt.subplots(3, 4, figsize=(16, 11))
+    for ax in axes.flatten()[len(tests):]:
+        ax.set_visible(False)
     for ax, t in zip(axes.flatten(), tests):
         for condition, rs in runs.items():
             color = CONDITION_COLORS.get(condition, DARK_GREY)

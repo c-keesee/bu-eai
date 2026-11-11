@@ -155,11 +155,11 @@ def test_possible_versions_use_no_magic():
     for test in all_tests():
         for version in test.versions:
             if version.possible:
-                assert not version.stuck and not version.ghost_walls, (test.name, version.label)
+                assert not (version.stuck or version.ghost_walls or version.invisible_walls), (test.name, version.label)
                 assert all(event[1] in LEGAL_EVENTS for event in version.events), (test.name, version.label)
             else:
                 magic = [e for e in version.events if e[1] not in LEGAL_EVENTS]
-                assert version.stuck or version.ghost_walls or magic, (test.name, version.label)
+                assert version.stuck or version.ghost_walls or version.invisible_walls or magic, (test.name, version.label)
 
 
 def test_versions_are_identical_until_the_event():
