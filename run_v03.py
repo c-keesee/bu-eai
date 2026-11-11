@@ -65,9 +65,9 @@ MAIN_CONDITIONS = ["core", "pays", "memory", "both"]
 
 # What they all share. See RESULTS.md for how these were chosen.
 WORLD = dict(n_balls=3, n_rollers=3)
-BRAIN_SIZE = dict(core_units=256, filters=8, local_hidden=16)
-TRAINING = dict(n_agents=128, chunk_len=32, n_updates=4000, learning_rate=3e-3, final_learning_rate=1e-3,
-                decay_from=0.5, clip=None, life_length=512, log_every=500)
+BRAIN_SIZE = dict(core_units=256, filters=16, local_hidden=32)
+TRAINING = dict(n_agents=128, chunk_len=32, n_updates=3000, learning_rate=3e-3, final_learning_rate=1e-3,
+                decay_from=0.75, clip=None, life_length=512, log_every=500)
 TEST_SEED = 50_000          # the test scenes use their own maps, never the training ones
 
 
