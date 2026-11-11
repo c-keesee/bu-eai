@@ -125,11 +125,13 @@ def load_runs(out_dir, conditions=None, seeds=None):
     return runs
 
 
-def _cell(values, percent=True):
-    values = np.asarray(values, dtype=float)
-    show = (lambda v: f"{100 * v:.0f}%") if percent else (lambda v: f"{v:.4f}")
-    each = " ".join(show(v) for v in values)
-    return f"{show(values.mean())} [{each}]" if len(values) > 1 else show(values.mean())
+def _cell(rates, ratios):
+    """'pass rate  x ratio', e.g. '87% x1.4'; with several seeds the per-seed rates follow in brackets."""
+    rates, ratios = np.asarray(rates, dtype=float), np.asarray(ratios, dtype=float)
+    text = f"{100 * rates.mean():.0f}% x{min(ratios.mean(), 99):.2f}"
+    if len(rates) > 1:
+        text += " [" + " ".join(f"{100 * v:.0f}" for v in rates) + "]"
+    return text
 
 
 def build_report(runs):
@@ -154,10 +156,12 @@ def build_report(runs):
         for row in row_names:
             out.append(f"  {row:<22}" + "".join(f"{get(row, c, who):<26}" for c, who in columns))
 
-    title = "COMMON-SENSE TESTS: share of scenes where the impossible versions were more surprising (chance = 50%)"
+    title = ("COMMON-SENSE TESTS.  Each cell: share of scenes where the impossible versions were more surprising "
+             "(chance = 50%),\nthen 'x' how many times more surprising they were on average (x1.00 = no difference).")
     for out in (full, short):
-        table(title, tests, lambda t, c, who: _cell([r["tests"][t][who]["pass_rate"] for r in runs[c]]), out)
-    short += ["", "(Full tables: report.txt. 'memoryless' cannot remember, so it should fail the hidden-object tests.)"]
+        table(title, tests, lambda t, c, who: _cell([r["tests"][t][who]["pass_rate"] for r in runs[c]],
+                                                    [r["tests"][t][who]["ratio"] for r in runs[c]]), out)
+    short += ["", "(Full tables: report.txt.)"]
 
     full += ["", "--- MATCHED PAIRS: impossible version vs the possible version that ends the same way ---"]
     for t in tests:
@@ -167,7 +171,8 @@ def build_report(runs):
         for i, (impossible, possible) in enumerate(info["pairs"]):
             label = f"'{impossible}' vs '{possible}'"
             full.append(f"    {label:<62}" + "".join(
-                f"{_cell([r['tests'][t][who]['pair_rates'][i] for r in runs[c]]):<26}" for c, who in columns))
+                f"{_cell([r['tests'][t][who]['pair_rates'][i] for r in runs[c]], [r['tests'][t][who]['pair_ratios'][i] for r in runs[c]]):<26}"
+                for c, who in columns))
         full.append("    mean surprise in the window, per version (x 1000):")
         for v, label in enumerate(info["versions"]):
             mark = "possible  " if info["possible"][v] else "IMPOSSIBLE"

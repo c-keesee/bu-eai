@@ -37,7 +37,9 @@ connects what went in with what should come out can do better.
 THE SCORE. Each version has a weight: +1 if impossible, -1 if possible. For
 each scene we add up weight x surprise. The scene is passed if the sum is
 above zero (more surprise at the impossible versions). The score is the share
-of scenes passed; 50% is chance.
+of scenes passed; 50% is chance. Next to it we report HOW MUCH more surprising
+the impossible versions were, as a ratio (1.0 = no difference). Both matter: a
+brain can be "more surprised" in every scene by a hair's breadth.
 
 We also score each MATCHED PAIR on its own: an impossible version against the
 possible version that ends the same way ("nothing comes out" after a roller
@@ -412,9 +414,17 @@ def score(test, surprise):
     contrast = (weights * in_window).sum(axis=0)                        # per scene; > 0 = pass
     possible = np.array([v.possible for v in test.versions])
     rate = lambda difference: float((difference > 0).mean() + 0.5 * (difference == 0).mean())   # ties count half
+    mean = in_window.mean(axis=1)                                       # per version
+    ratio = lambda up, down: float(up / max(down, 1e-12))
     return {
         "pass_rate": rate(contrast),
         "pair_rates": [rate(in_window[i] - in_window[p]) for i, p in test.pairs],
+        # HOW MUCH more surprising: mean surprise at the +1 versions divided by
+        # mean surprise at the -1 versions. 1.0 = no difference at all. A pass
+        # rate can be high while this is 1.01, which would mean "consistently,
+        # but by a hair": not what we are looking for.
+        "ratio": ratio(mean[weights[:, 0] > 0].sum(), mean[weights[:, 0] < 0].sum()),
+        "pair_ratios": [ratio(mean[i], mean[p]) for i, p in test.pairs],
         "surprise": [float(x) for x in in_window.mean(axis=1)],         # mean per version, in the window
         "possible_mean": float(in_window[possible].mean()),
         "impossible_mean": float(in_window[~possible].mean()),
