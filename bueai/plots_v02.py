@@ -78,7 +78,8 @@ def plot_darkroom(runs, path):
     """Dark room in a new place, after a long look around vs almost none."""
     main = runs["random"]
     senses = ["touch", "hearing", "vision"]
-    fig, axes = plt.subplots(1, 4, figsize=(17, 4.3))
+    fig, axes = plt.subplots(2, 2, figsize=(12, 9))
+    axes = axes.flatten()
 
     ax = axes[0]
     for lit, style in (("300", {}), ("8", {"linestyle": (0, (2, 1.5))})):
@@ -108,13 +109,14 @@ def plot_darkroom(runs, path):
         ax.set_xlabel("moments since the lights went out")
         ax.set_ylabel("prediction error (log scale)")
         _legend_above(ax)
-    _finish(fig, "Dark room in a new place: does looking around first help?", main, path, top=0.92)
+    _finish(fig, "Dark room in a new place: does looking around first help?", main, path, top=0.96)
 
 
 def plot_movement(runs, path):
     """Movement styles: each brain moving the way it was trained to move."""
     styles = [s for s in STYLE_COLORS if s in runs]
-    fig, axes = plt.subplots(1, 4, figsize=(17, 4.3))
+    fig, axes = plt.subplots(2, 2, figsize=(12, 9))
+    axes = axes.flatten()
 
     ax = axes[0]
     for s in styles:
@@ -140,7 +142,7 @@ def plot_movement(runs, path):
     for ax in axes:
         ax.set_xlabel("moments since arriving in a brand-new map")
         _legend_above(ax)
-    _finish(fig, "Three ways of moving, each brain trained and tested with its own style", runs[styles[0]], path)
+    _finish(fig, "Three ways of moving, each brain trained and tested with its own style", runs[styles[0]], path, top=0.96)
 
 
 def plot_feedback(runs, path):

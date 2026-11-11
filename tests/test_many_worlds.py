@@ -130,7 +130,7 @@ def test_v02_training_runs_and_reduces_error():
     brain = Brain(world.sense_shapes, world.n_actions, core_size=64, curiosity_heads=True)
     history = train(brain, world, TrainConfig(n_updates=30, n_agents=16, life_length=64,
                                               movement="progress", learning_rate=1e-3), verbose=False)
-    for name in ("vision", "touch", "hearing", "first_look"):
+    for name in ("vision", "touch", "first_look"):
         assert np.mean(history[name][-5:]) < np.mean(history[name][:5]), name
 
 

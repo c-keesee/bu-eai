@@ -51,7 +51,7 @@ CONDITIONS = {
 # What they all share. See RESULTS.md for why these sizes were chosen.
 BRAIN_SIZE = dict(core_size=256, predictor_size=256, curiosity_heads=True)
 TRAINING = dict(n_agents=128, chunk_len=32, n_updates=6000, learning_rate=1e-3,
-                final_learning_rate=3e-4, life_length=512, log_every=500)
+                final_learning_rate=3e-4, decay_from=0.5, life_length=512, log_every=500)
 
 
 def run_one(task):
@@ -66,9 +66,12 @@ def run_one(task):
     untrained = copy.deepcopy(brain)
 
     config = TrainConfig(seed=seed, movement=setup["movement"], **{**TRAINING, "n_updates": n_updates})
+    # Training state is saved as it goes, so an interrupted run resumes here.
+    os.makedirs(os.path.join(out_dir, "weights"), exist_ok=True)
+    in_progress = os.path.join(out_dir, "weights", f"{condition}_seed{seed}.in_progress")
+    history = train(brain, world, config, tag=f"[{condition} seed {seed}] ", save_path=in_progress)
+    train_seconds = history.pop("seconds")[0]
     start = time.time()
-    history = train(brain, world, config, tag=f"[{condition} seed {seed}] ")
-    train_seconds = time.time() - start
     brain.eval()
 
     n_agents = 64 if quick else 256
@@ -90,12 +93,12 @@ def run_one(task):
     }
 
     os.makedirs(os.path.join(out_dir, "runs"), exist_ok=True)
-    os.makedirs(os.path.join(out_dir, "weights"), exist_ok=True)
     torch.save(brain.state_dict(), os.path.join(out_dir, "weights", f"{condition}_seed{seed}.pt"))
     with open(_run_file(out_dir, condition, seed), "w") as f:
         json.dump(_rounded(result), f)
+    os.remove(in_progress)
     print(f"  [{condition} seed {seed}] done: trained {train_seconds / 60:.1f} min, "
-          f"tested {(time.time() - start - train_seconds) / 60:.1f} min", flush=True)
+          f"tested {(time.time() - start) / 60:.1f} min", flush=True)
     return condition, seed
 
 

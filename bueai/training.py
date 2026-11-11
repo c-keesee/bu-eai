@@ -22,6 +22,8 @@ New in v0.2 (all switched off by default, so v0.1 runs exactly as before):
       prefer actions the brain expects to learn from (see Brain.curiosity).
 """
 
+import os
+import time
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -278,7 +280,8 @@ class TrainConfig:
     movement: str = "random"            # "random", "progress" or "error" (see Life)
     curiosity_strength: float = 3.0
     life_length: int = None             # moments per life; None = one endless life
-    final_learning_rate: float = None   # if set, the learning rate glides down to this value
+    final_learning_rate: float = None   # if set, the learning rate glides down to this value...
+    decay_from: float = 0.0             # ...starting after this fraction of training (0 = from the start)
 
 
 def prediction_loss(experience):
@@ -324,12 +327,17 @@ def curiosity_loss(experience):
     return {"first_look": first, "second_look": second}
 
 
-def train(brain, world, config=None, verbose=True, tag="", checkpoint=None):
+def train(brain, world, config=None, verbose=True, tag="", checkpoint=None, save_path=None):
     """Let the brain live and learn. Returns the loss history for plotting.
 
     tag:        text put in front of each progress line (e.g. which seed this is).
     checkpoint: optional function called as checkpoint(update, brain) after
                 every logged update (used by the pilot to watch progress).
+    save_path:  optional file. If given, the complete state of training is
+                saved there at every logged update, and if the file already
+                exists training picks up from it instead of starting over.
+                (For long runs on machines that may restart. A resumed run
+                gives exactly the same result as an uninterrupted one.)
     """
     config = config or TrainConfig()
     life = Life(brain, world, config.n_agents, seed=config.seed, blackouts=config.blackouts,
@@ -345,11 +353,25 @@ def train(brain, world, config=None, verbose=True, tag="", checkpoint=None):
     if brain.has_curiosity:
         history.update({"first_look": [], "second_look": []})
 
-    for update in range(1, config.n_updates + 1):
+    first_update, seconds_so_far, started = 1, 0.0, time.time()
+    if save_path and os.path.exists(save_path):
+        saved = torch.load(save_path, weights_only=False)
+        brain.load_state_dict(saved["brain"])
+        optimizer.load_state_dict(saved["optimizer"])
+        world.__dict__.update(saved["world"])           # the maps, positions and random stream
+        for key, value in saved["life"].items():        # the agents' minds, ages, senses, random stream
+            setattr(life, key, value)
+        history, seconds_so_far = saved["history"], saved["seconds"]
+        first_update = saved["update"] + 1
+        if verbose:
+            print(f"  {tag}resuming from update {saved['update']}", flush=True)
+
+    for update in range(first_update, config.n_updates + 1):
         if config.final_learning_rate:
             # Glide smoothly (geometrically) from the starting rate to the final one:
             # big steps early to learn fast, small steps late to settle.
-            progress = (update - 1) / max(1, config.n_updates - 1)
+            start = config.decay_from * config.n_updates
+            progress = max(0.0, (update - 1 - start) / max(1.0, config.n_updates - 1 - start))
             rate = config.learning_rate * (config.final_learning_rate / config.learning_rate) ** progress
             for group in optimizer.param_groups:
                 group["lr"] = rate
@@ -387,5 +409,14 @@ def train(brain, world, config=None, verbose=True, tag="", checkpoint=None):
                 print(f"  {tag}update {update:5d}/{config.n_updates}   prediction error:  {parts}", flush=True)
             if checkpoint:
                 checkpoint(update, brain)
+            if save_path:
+                keep = ("observations", "core_state", "last_action", "sense_on", "age", "rng")
+                torch.save({"brain": brain.state_dict(), "optimizer": optimizer.state_dict(),
+                            "world": world.__dict__, "life": {k: getattr(life, k) for k in keep},
+                            "history": history, "update": update,
+                            "seconds": seconds_so_far + time.time() - started}, save_path + ".tmp")
+                os.replace(save_path + ".tmp", save_path)     # swap in one step: never a half-written file
 
+    if save_path:
+        history["seconds"] = [seconds_so_far + time.time() - started]
     return history
