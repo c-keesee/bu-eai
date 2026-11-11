@@ -62,6 +62,15 @@ CONDITIONS = {
     "memoryless": dict(training=dict(memoryless=True)),
 }
 MAIN_CONDITIONS = ["core", "pays", "memory", "both"]
+CONDITION_TITLES = {"core": "Core only", "pays": "Remembering pays", "memory": "External memory", "both": "Both"}
+# Nicknames for the saved brains, by condition and seed (0, 1, 2). The files keep their technical names.
+NICKNAMES = {"core": ["Sachiel", "Shamshel", "Ramiel"], "pays": ["Gaghiel", "Israfel", "Sandalphon"],
+             "memory": ["Matarael", "Sahaquiel", "Iruel"], "both": ["Leliel", "Bardiel", "Zeruel"]}
+
+
+def nickname(condition, seed):
+    names = NICKNAMES.get(condition, [])
+    return names[seed] if seed < len(names) else None
 
 # What they all share. See RESULTS.md for how these were chosen.
 WORLD = dict(n_balls=3, n_rollers=3)
@@ -144,7 +153,8 @@ def run_one(task):
     seconds = history.pop("seconds")[0]
     save_brain(checkpoint_path(out_dir, condition, seed), brain,
                {"note": f"v0.3, condition '{condition}', seed {seed}, {n_updates} updates.",
-                "condition": condition, "seed": seed, "world": WORLD, "training": {k: v for k, v in training.items()}},
+                "nickname": nickname(condition, seed), "condition": condition, "seed": seed, "updates": n_updates,
+                "world": WORLD, "training": {k: v for k, v in training.items()}},
                **brain_args)
 
     result = {
